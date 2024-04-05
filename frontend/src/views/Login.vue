@@ -4,27 +4,23 @@
       <el-col :span="8">
         <el-form class="form-container" label-width="80" style="width: 400px;">
           <el-form-item label="用户名" prop="username">
-            <el-input v-model="username"></el-input>
+            <el-input v-model="loginForm.username"></el-input>
           </el-form-item>
           <el-form-item label="密码" prop="password">
-            <el-input show-password v-model="password"></el-input>
-          </el-form-item>
-          <el-form-item label="确认密码" prop="confirm_password">
-            <el-input show-password v-model="confirm_password"></el-input>
+            <el-input show-password v-model="loginForm.password"></el-input>
           </el-form-item>
           <el-form-item>
-            <el-link style="margin-right: 10px; color:white" @click="goToLogin">已有帐号？直接登录</el-link>
-            <el-button type="default" @click="onRegister">注册</el-button>
+            <el-link style="margin-right: 10px; color:white" @click="goToRigister">没有帐号？立即注册</el-link>
+            <el-button type="default" @click="onLogin">登录</el-button>
           </el-form-item>
         </el-form>
       </el-col>
       <el-col :span="8"></el-col>
     </el-row>
-
 </template>
 
 <script>
-import { reactive, toRefs } from 'vue';
+import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElForm, ElFormItem, ElInput, ElButton, ElLink } from 'element-plus';
@@ -37,48 +33,47 @@ export default {
     ElButton,
     ElLink
   },
-
   setup() {
-    const router = useRouter(); // 使用 useRouter 获取路由器实例
-    const registerForm = reactive({
+    const router = useRouter();
+    const loginForm = reactive({
       username: '',
-      password: '',
-      confirm_password: ''
+      password: ''
     });
 
-    const onRegister = async () => {
-      if (registerForm.password !== registerForm.confirm_password) {
-        alert("请确认两次输入的密码一致！");
+    const onLogin = async () => {
+      if (!loginForm.username || !loginForm.password) {
+        alert("请填写用户名和密码！");
         return;
       }
-      // 发送 POST 请求到后端注册API
+
       try {
-        const response = await axios.post('http://localhost:5000/api/register', registerForm);
-        if (response.status === 201) {
+        const response = await axios.post('http://localhost:5000/api/login', {
+          username: loginForm.username,
+          password: loginForm.password
+        });
+        
+        if (response.data) {
           alert(response.data.message);
-          router.push('/'); 
-        }  
+          router.push('/main');
+        } 
       } 
       catch (error) {
-        console.log(error)
-        alert(error.response.data.message); 
-      };
+        alert(error.response.data.message);
+      }
     };
 
-    const goToLogin = () => {
-      router.push('/');
+    const goToRigister = () => {
+      router.push('/register');
     };
 
-    // 使用 toRefs 以确保模板中可以直接使用响应式对象的属性
     return {
-      ...toRefs(registerForm),
-      onRegister,
-      goToLogin
+    loginForm,
+    onLogin,
+    goToRigister
     };
   }
 };
 </script>
-
 
 <style>
 .background-image {

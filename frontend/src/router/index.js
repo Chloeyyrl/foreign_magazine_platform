@@ -4,15 +4,20 @@ import { createRouter, createWebHistory } from 'vue-router';
 const routes = [
 
     {
-    path: '/',
+    path: '/register',
     name: 'Register',
     component: () =>import("../views/Register.vue")
     },
     {
-        path:'/Test',
-        name:"Test",
-        component: () =>import("../views/Test.vue")
-    }
+        path:'/',
+        name:"Login",
+        component: () =>import("../views/Login.vue")
+    },
+    {
+        path:'/main',
+        name:"Main",
+        component: () =>import("../views/Main.vue")
+    },
 ];
 
 // 创建路由实例
