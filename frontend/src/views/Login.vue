@@ -25,6 +25,8 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElForm, ElFormItem, ElInput, ElButton, ElLink } from 'element-plus';
 
+
+
 export default {
   components: {
     ElForm,
@@ -47,13 +49,12 @@ export default {
       }
 
       try {
-        const response = await axios.post('http://localhost:5000/api/login', {
+        const response = await axios.post('/api/login', {
           username: loginForm.username,
           password: loginForm.password
         });
         
         if (response.data) {
-          alert(response.data.message);
           router.push('/main');
         } 
       } 

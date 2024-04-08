@@ -18,6 +18,7 @@ const routes = [
         name:"Main",
         component: () =>import("../views/Main.vue")
     },
+    
 ];
 
 // 创建路由实例
