@@ -7,6 +7,7 @@ app = Flask(__name__)
 CORS(app)
 app.secret_key = "2a8cd348cbc2c74268c58af55e6dc767"
 
+
 DATABASE_CONFIG = {
     'host': 'localhost',
     'user': 'root',
@@ -21,16 +22,14 @@ def home():
 
 @app.route('/api/user', methods=['GET'])
 def get_user():
-    # 检查用户是否已登录
-    if 'username' in session and 'userid' in session:
-        # 用户已登录，返回用户信息
+    if 'username' in session:
         return jsonify({
-            "username": session['username'],
-            "userid": session['userid']
+            "userid": session['userid'],
+            "username": session['username']
         }), 200
     else:
-        # 用户未登录
-        return jsonify({"message": "用户未登录"}), 404
+        return jsonify({"message": "用户未登录"}), 401
+
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -48,9 +47,7 @@ def login():
             user = cursor.fetchone()
             if user is not None:
                 userid = user['id']
-                session['userid'] = userid
-                session['username'] = username
-                return jsonify({"message": "登录成功!"}), 200
+                return jsonify({"message": "登录成功!", "userid": userid, "username": username}), 200
             else:
                 return jsonify({"message": "用户名或密码错误"}), 401
     except pymysql.MySQLError as e:

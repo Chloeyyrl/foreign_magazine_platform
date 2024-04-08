@@ -49,16 +49,20 @@ export default {
       }
 
       try {
-        const response = await axios.post('/api/login', {
+        const response = await axios.post('http://localhost:5000/api/login', {
           username: loginForm.username,
           password: loginForm.password
         });
         
         if (response.data) {
+          console.log(response.data);
+          sessionStorage.setItem('userName', response.data.username);
+          sessionStorage.setItem('userId', response.data.userid);
           router.push('/main');
         } 
       } 
       catch (error) {
+        console.log(error.response);
         alert(error.response.data.message);
       }
     };
