@@ -20,15 +20,20 @@ DATABASE_CONFIG = {
 def home():
     return 'Welcome to the API!'
 
-@app.route('/api/user', methods=['GET'])
-def get_user():
-    if 'username' in session:
-        return jsonify({
-            "userid": session['userid'],
-            "username": session['username']
-        }), 200
-    else:
-        return jsonify({"message": "用户未登录"}), 401
+@app.route('/api/get_article', methods=['GET'])
+def get_article():
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `article`"
+            cursor.execute(sql)
+            articles = cursor.fetchall()
+            return jsonify(articles), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
 
 
 @app.route('/api/login', methods=['POST'])

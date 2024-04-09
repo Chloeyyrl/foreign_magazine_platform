@@ -36,7 +36,7 @@ export default {
       <el-menu class="el-menu-demo" mode="horizontal" style="display: flex; justify-content: space-between;">
         <el-menu-item index="1">
             <el-icon><house /></el-icon>
-            {{ userName }}
+            <b>{{ userName }}</b>
         </el-menu-item>
         <div class="menu-spacer"></div>
         <el-menu-item index="2" @click="logout">
