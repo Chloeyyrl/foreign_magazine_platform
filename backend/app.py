@@ -20,6 +20,29 @@ DATABASE_CONFIG = {
 def home():
     return 'Welcome to the API!'
 
+@app.route('/api/check_reading_status', methods=['GET'])
+def check_reading_status():
+    user_id = request.args.get('userId')
+    article_id = request.args.get('article_id')
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `reading_status` WHERE `user_id`=%s AND `article_id`=%s"
+            cursor.execute(sql, (user_id, article_id))
+            article = cursor.fetchone()
+            
+            is_read = article is not None
+            if is_read:
+                return jsonify({"is_read": True}), 200
+            else:
+                return jsonify({"is_read": False}), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
+
 @app.route('/api/get_article', methods=['GET'])
 def get_article():
     connection = pymysql.connect(**DATABASE_CONFIG)
@@ -33,7 +56,6 @@ def get_article():
         return jsonify({"message": "数据库错误", "错误": str(e)}), 500
     finally:
         connection.close()
-
 
 
 @app.route('/api/login', methods=['POST'])

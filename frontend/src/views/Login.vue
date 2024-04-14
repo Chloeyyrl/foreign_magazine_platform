@@ -82,7 +82,7 @@ export default {
 
 <style>
 .background-image {
-  background-image: url('../assets/dim-hou-93AcQpzcASE-unsplash.jpg'); /* Adjust the path as necessary */
+  background-image: url('../assets/background.png'); /* Adjust the path as necessary */
   background-size: cover; /* Cover the entire area */
   background-position: center center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */

@@ -18,6 +18,11 @@ const routes = [
         name:"Main",
         component: () =>import("../views/Main.vue")
     },
+    {
+        path:'/read',
+        name:"Read",
+        component: () =>import("../views/Read.vue")
+    }
     
 ];
 
