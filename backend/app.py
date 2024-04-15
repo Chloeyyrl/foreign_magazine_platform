@@ -20,6 +20,22 @@ DATABASE_CONFIG = {
 def home():
     return 'Welcome to the API!'
 
+@app.route('/api/get_article_info', methods=['GET'])
+def get_article_info():
+    article_id = request.args.get('article_id')
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `article` WHERE `id`=%s"
+            cursor.execute(sql, (article_id,))
+            article = cursor.fetchone()
+            return jsonify(article), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
 @app.route('/api/check_reading_status', methods=['GET'])
 def check_reading_status():
     user_id = request.args.get('userId')

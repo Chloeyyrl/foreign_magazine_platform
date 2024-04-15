@@ -19,10 +19,12 @@ const routes = [
         component: () =>import("../views/Main.vue")
     },
     {
-        path:'/read',
-        name:"Read",
-        component: () =>import("../views/Read.vue")
+        path: '/read/:id', // 在路径中直接定义参数
+        name: 'Read',
+        component: () => import("../views/Read.vue"),
+        props: true  // 使组件能够通过 props 接收路由参数
     }
+
     
 ];
 

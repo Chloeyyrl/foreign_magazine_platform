@@ -1,7 +1,6 @@
 <script setup>
 import Header from '../components/Header.vue';
 import { ref, reactive, onMounted} from 'vue';
-// For Vue Router 4 with Vue 3
 import { useRouter } from 'vue-router';
 
 import axios from 'axios';
@@ -18,14 +17,12 @@ onMounted(() => {
 });
 
 // 跳转到文章详情页
-// 跳转到文章详情页
-const navigateToArticle = (articleId, isRead) => {
-    router.push({ 
-        name: '/read', 
-        params: { 
-            id: articleId, 
-            isRead: isRead  // 将isRead状态作为参数传递
-        } 
+const navigateToArticle = (articleId) => {
+    router.push({
+        name: 'Read',
+        params: { id: articleId }
+    }).catch(error => {
+        console.error('Routing error:', error);
     });
 };
 
@@ -44,6 +41,7 @@ const checkReadingStatus = (article) => {
     });
 };
 
+//展示文章封面
 const getArticles = () => {
     axios.get('http://localhost:5000/api/get_article')
     .then(response => {
@@ -85,7 +83,7 @@ const toggleShowAll = () => {
         
         <div class="articles-row">
             <div v-for="article in displayedArticles()" :key="article.id" class="article-card-container">
-                <el-card class="article-card" @click="() => navigateToArticle(article.id, article.isRead)">
+                <el-card class="article-card" @click="() => navigateToArticle(article.id)">
                     <el-text>
                         <span>{{ article.title }}</span>
                     </el-text>
@@ -143,7 +141,7 @@ const toggleShowAll = () => {
   width: 100%; /* 确保卡片填满容器 */
   height: 150px; /* 高度自适应 */
   transition: background-color 0.3s; /* 平滑过渡效果 */
-  background-color: white; /* 背景颜色 */
+  background-color:white; /* 背景颜色 */
   padding-bottom: 60px; /* 为底部元素预留足够空间 */
  /* 确保内边距不影响宽高计算 */
 }
