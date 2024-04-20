@@ -12,9 +12,16 @@ DATABASE_CONFIG = {
     'db': 'foreign_magazine_data',
     'cursorclass': pymysql.cursors.DictCursor
 }
+# def replace_quotes(match):
+#     # 将不同的弯引号替换为其对应的直引号
+#     char = match.group(0)
+#     return '"' if char in '“”' else "'"
 
 def fetch_article_info(target_url):
-    response = requests.get(target_url)
+    headers = {'Accept-Charset': 'utf-8'}
+    response = requests.get(target_url, headers=headers)
+    response.encoding = 'utf-8'
+
     soup = BeautifulSoup(response.text, 'html.parser')
     # 获取标题
     title_td = soup.find('td', id='TRS_Editor_title')
@@ -55,6 +62,19 @@ def fetch_article_info(target_url):
             new_style_tag = soup.new_tag('style')
             new_style_tag.string = additional_css
             art_content_div.insert(0, new_style_tag)
+        
+        # art_text 用于存储文章的纯文本内容
+        art_text = ''
+        p_tags = art_content_div.find_all('p')
+        for p in p_tags:
+            # 遍历所有的 <p> 标签，删除特定的 style 设置；
+            if 'style' in p.attrs:
+                if (p['style']=='text-align: left;'):
+                    del p['style']
+            
+            if re.search('[a-zA-Z]', p.text):
+                art_text += p.text + '\n'
+
 
         # 更新图片路径
         images = art_content_div.find_all('img')
@@ -70,14 +90,17 @@ def fetch_article_info(target_url):
     catogory_div = soup.find('a', class_='lm-2016e CurrChnlCls')
     catogory = catogory_div.text
 
-    # print(title,source,update_time,catogory,sep='\n')
     
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "INSERT INTO `article` (`title`, `content`, `article_source`, `update_time`, `category`) VALUES (%s, %s, %s, %s, %s)"
-            cursor.execute(sql, (title, content, source, update_time, catogory))
-            connection.commit()
+            check_exist_sql = "SELECT * FROM `article` WHERE `title` = %s"
+            art_exist = cursor.execute(check_exist_sql, (title,))
+            if not art_exist:
+                sql = "INSERT INTO `article` (`title`, `content`, `article_source`, `update_time`, `category`,`art_text`) VALUES (%s, %s, %s, %s, %s,%s)"
+                cursor.execute(sql, (title, content, source, update_time, catogory,art_text))
+                connection.commit()
+                print(f"数据插入成功；{title}")
     except pymysql.MySQLError as e:
         print(f"数据插入失败；{e}")
     finally:
@@ -102,9 +125,9 @@ def fetch_url(target_site):
             abs_url = urljoin(target_site, rel_url)
             return abs_url
         else:
-            return "No 'a' tag found within the 'div'."
+            return "在该div中没有找到a标签。"
     else:
-        return "No 'div' with class 'bian8' found."
+        return "没有属性值为'bian8'的div标签。"
 
 # 指定要抓取的网站
 target_sites = ['https://www.bjreview.com/Lifestyle/','https://www.bjreview.com/China/','https://www.bjreview.com/World/','https://www.bjreview.com/Business/']
