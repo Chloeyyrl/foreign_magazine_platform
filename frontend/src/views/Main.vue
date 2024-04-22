@@ -84,9 +84,12 @@ const toggleShowAll = () => {
         <div class="articles-row">
             <div v-for="article in displayedArticles()" :key="article.id" class="article-card-container">
                 <el-card class="article-card" @click="() => navigateToArticle(article.id)">
-                    <el-text>
-                        <span>{{ article.title }}</span>
-                    </el-text>
+                    
+                        <span class="title">{{ article.title }}</span>
+                        <br />
+                        <span class="time">{{ article.update_time }}</span>
+                        <!-- {{ article.art_text.substring(0, 50) }}{{ article.art_text.length > 50 ? '...' : '' }} -->
+                   
                     <div class="article-card-bottom">
                         <el-divider />
                         <div class="article-info">
@@ -104,6 +107,17 @@ const toggleShowAll = () => {
 
 
 <style scoped>
+
+span.title {
+    font-weight: bold;
+}
+
+.time {
+    position: absolute; /* 使用绝对定位 */
+    top: 120px; /* 调整此值以使其位于分隔线上方的适当位置 */
+    color: #909399;
+}
+
 
 .article-info {
   display: flex;

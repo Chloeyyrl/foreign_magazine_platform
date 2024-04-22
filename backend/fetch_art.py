@@ -4,6 +4,10 @@ from urllib.parse import urljoin
 import re
 import pymysql
 import pymysql.cursors
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 DATABASE_CONFIG = {
     'host': 'localhost',
@@ -12,10 +16,7 @@ DATABASE_CONFIG = {
     'db': 'foreign_magazine_data',
     'cursorclass': pymysql.cursors.DictCursor
 }
-# def replace_quotes(match):
-#     # 将不同的弯引号替换为其对应的直引号
-#     char = match.group(0)
-#     return '"' if char in '“”' else "'"
+
 
 def fetch_article_info(target_url):
     headers = {'Accept-Charset': 'utf-8'}
@@ -101,6 +102,8 @@ def fetch_article_info(target_url):
                 cursor.execute(sql, (title, content, source, update_time, catogory,art_text))
                 connection.commit()
                 print(f"数据插入成功；{title}")
+            else:
+                print("文章暂时未更新")
     except pymysql.MySQLError as e:
         print(f"数据插入失败；{e}")
     finally:

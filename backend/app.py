@@ -24,6 +24,103 @@ DATABASE_CONFIG = {
 def home():
     return 'Welcome to the API!'
 
+#聊天框
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No message provided"}), 400
+    dialogue_history = data['dialogue_history']
+    role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
+    prompt = f'''
+    You are chatting with a user who is reading a foreign magazine. Please provide a brief and concise answer to each question. 
+    User: {data['msg']}
+    {dialogue_history}
+    '''
+    print(dialogue_history)
+    answer = call_gpt(role_setting, prompt)
+    return jsonify({"answer": answer}), 200
+
+#语法分析
+@app.route('/api/analyze_grammar', methods=['POST'])
+def alynaze_grammar():
+    sentence = request.get_json()
+    if not sentence:
+        return jsonify({"error": "No sentence provided"}), 400
+    role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
+    prompt = f'''
+    Explain the following sentence in a simple and easy-to-understand way. You can provide a brief explanation of the sentence. 
+    Your output should look like this:
+    "Meaning of this sentence: 
+    [explanation of the sentence]."
+    {sentence}
+    '''
+    grammar_analysis = call_gpt(role_setting, prompt)
+    return jsonify({"grammar_analysis": grammar_analysis,'prompt_header':prompt}), 200
+    
+
+#添加新的一行
+@app.route('/api/add_term', methods=['GET'])
+def add_term():
+    user_id = request.args.get('user_id')
+    article_id = request.args.get('article_id')
+    term = request.args.get('term')
+    definition = request.args.get('definition')
+    if not term or not definition:
+        return jsonify({"message": "term和definition不能为空"}), 400
+    else:
+        connection = pymysql.connect(**DATABASE_CONFIG)
+        try:
+            with connection.cursor() as cursor:
+                sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
+                cursor.execute(sql, (user_id, article_id, term, definition))
+                connection.commit()
+                return jsonify({"message": "添加成功"}), 201
+        except pymysql.MySQLError as e:
+            return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+        finally:
+            connection.close()
+
+#删除
+@app.route('/api/delete_term', methods=['GET'])
+def delete_term():
+    id = request.args.get('id')
+    print("id",id)
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "DELETE FROM `vocabulary` WHERE `id`=%s"
+            cursor.execute(sql, (id, ))
+            print(cursor.execute(sql, (id, )))
+            connection.commit()
+            return jsonify({"message": "删除成功"}), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
+
+#展示生词和短语
+@app.route('/api/show_words_and_phrases', methods=['GET'])
+def show_words_and_phrases():
+    user_id = request.args.get('user_id')
+    article_id = request.args.get('article_id')
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `vocabulary` WHERE `user_id`=%s AND `article_id`=%s"
+            cursor.execute(sql, (user_id, article_id))
+            words_and_phrases = cursor.fetchall()
+            if not words_and_phrases:
+                return jsonify({"is_disabled":False}), 200
+            else:
+                return jsonify({"is_disabled":True,"words_and_phrases":words_and_phrases}), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+    
 #抽取生词和短语
 @app.route('/api/extract_words_and_phrases', methods=['GET'])
 def extract_words_and_phrases():
@@ -52,7 +149,6 @@ def extract_words_and_phrases():
                 <{art_text}>
             '''
             extract_result = call_gpt(role_setting, prompt)
-            print("extract_result:",extract_result)
             
             try:
                 term_list = json.loads(extract_result)
@@ -63,9 +159,9 @@ def extract_words_and_phrases():
 
                     insert_sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
                     cursor.execute(insert_sql, (user_id, article_id, term, definition))
-                    print("单词或短语插入成功")
+                    print(f"{term}插入成功")
 
-                return jsonify({"message":"单词和短语插入成功"}), 200
+                return jsonify({"message":"抽取的单词和短语成功保存到数据表"}), 200
             except json.JSONDecodeError as e:
                 return jsonify({"message": "结果解析错误", "错误": str(e)}), 500
         
