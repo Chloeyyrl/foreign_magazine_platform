@@ -22,14 +22,17 @@ const table_data = ref([]);
 const selectedText = ref('');
 let role = ref('');
 const inputMsg = ref('');
+let grammar_analysis = ref('');
 
 //测试聊天窗口
 let msgList=reactive([
-            // {role: "system", time: "", msg: "How can I help you?",}, 
+            {role: "system", msg: "How can I help you?",}, 
             // {role: "user", time: "", msg: "I'm Chloe",},
             // {role: "system", time: "", msg: "回答",},
         ])
 let dialogue_history = ref('');
+const dialogue_history_list = ref([]);
+let dialogue_history_header = ref('');
 
 
 // 组件挂载时获取文章数据
@@ -45,18 +48,17 @@ const addMsg = async (msg, role) => {
     const answer = ref('');
     msgList.push({
         role: role,
-        time: new Date().toISOString(),
         msg: msg,
     });
-    dialogue_history.value  = msgList.map(item => `${item.role}: ${item.msg}`).join('\n');
+    dialogue_history.value  = dialogue_history_header.value + msgList.slice(1).map(item => `${item.role}: ${item.msg}`).join('\n'); //问题应该在这，每次都会把msg.List中的元素加入到dialogue_history中，其实应该只要一遍
 
-    console.log(msgList)
     
     if (role == 'user' ){
         try {
         const response = await axios.post('http://localhost:5000/api/chat', {
             msg: msg,
-            dialogue_history: dialogue_history.value
+            dialogue_history: dialogue_history.value,
+            sentence : selectedText.value
         });
         answer.value = response.data.answer;
         addMsg(answer.value, role='system');
@@ -83,15 +85,25 @@ const analyzeGrammar = async () => {
             const response = await axios.post('http://localhost:5000/api/analyze_grammar', {
                 sentence: selectedText.value,
             });
-            const prompt_header = response.data.prompt_header;
-            addMsg(prompt_header, role.value='user');
-
+            msgList.length = 1; //每一次对新的句子进行语法分析时自动清空对话历史
+            
             if (response.data) {
-                console.log('分析结果:', response.data.grammar_analysis);
+                const prompt_header = response.data.prompt_header;
+                // addMsg(prompt_header, role='user'); 
+                dialogue_history_header.value = `user:${prompt_header}\n`; //聊天历史中的第一条记录是语法分析的prompt，但是不添加到msgList中,因为msgList中的记录会显示在聊天框中，而prompt_header不需要显示
+                // console.log('第一条对话历史:', dialogue_history.value);
+                prompt_analyze_grammar = response.data.prompt_header
+                history_entry = {role: 'user', msg: prompt_analyze_grammar}
+                
+                dialogue_history_list.push(history_entry)
+
                 role = 'system';
                 const  msg = ref('');
                 msg.value = response.data.grammar_analysis;
-                addMsg(msg, role);
+                grammar_analysis.value = msg.value;
+                //addMsg(msg, role); //聊天历史中的第二条记录是语法分析的结果，也不需要显示在聊天框中
+                dialogue_history_header.value += `system:${msg.value}\n`; 
+                // console.log('第一和二条对话历史:', dialogue_history.value);
             }
         } catch (error) {
             console.error('语法分析出错:', error);
@@ -222,8 +234,7 @@ onBeforeUnmount(() => {
             <el-col :span="10" class="func">
                 <h1>
                     <el-button type="primary" plain @click="extractWordsAndPhrases" :disabled="isDisabled">重点词汇短语</el-button>
-                    <el-button type="success" plain @click="analyzeGrammar">语法分析</el-button>
-                    <el-button type="warning" plain>语境应用</el-button>
+                    <el-button type="warning" plain @click="analyzeGrammar">语法分析</el-button>
                 </h1>
                 <el-table :data="table_data" style="width: 100%">
                     <el-table-column prop="term" label="词汇或短语" width="200px">
@@ -245,8 +256,9 @@ onBeforeUnmount(() => {
                         </template>
                     </el-table-column>
                 </el-table>
-                <el-button @click="addRow" type="primary" plain style="margin-top: 10px; margin-bottom: 10px;">添加</el-button>
-                
+                <el-button @click="addRow" type="primary" plain style="margin-top: 10px; ">添加</el-button>
+                <el-divider />
+                <div v-html="grammar_analysis"></div>
                 <!-- 添加聊天窗口 -->
                 <div class="div1">
                     <div v-for="(msg,index) in msgList" :key="index">
@@ -254,14 +266,16 @@ onBeforeUnmount(() => {
                             <p :class="{'right':msg.role=='user'}">
                             <el-avatar v-if="msg.role=='system'" icon="UserFilled"></el-avatar>
                             <el-avatar v-if="msg.role=='user'" style="float:right;" src="../src/assets/user.jpg">user</el-avatar>
-                            <span class="content">{{msg.msg}}</span>
+                            <span class="content">{{ msg.msg }}</span>
                             </p>
                     </div>
                     <div class="input-group">  <!-- 使用 flex 布局的 div -->
                         <el-input type="textarea" v-model="inputMsg" @keyup.enter="addMsg(inputMsg, role='user')" placeholder="请输入内容" clearable autosize></el-input>
-                        <el-button  @click="addMsg(inputMsg, role='user')" icon="Position" type="primary" plain></el-button>
+                        <el-button  @click="addMsg(inputMsg, role='user')" icon="Position" type="warning" plain></el-button>
                     </div>
+                    
                 </div>
+                <el-button type="warning" plain style="margin-top: 10px;">清空对话</el-button>
 
                 
 

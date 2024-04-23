@@ -9,12 +9,9 @@ def call_gpt(role_setting, prompt):
 
     response = client.chat.completions.create(
         messages=[
-            {"role": "system", "content": role_setting},
+            {"role": "assistant", "content": role_setting},
             {"role": "user", "content": prompt}
         ],
         model="gpt-3.5-turbo-0125"
     )
-    result = response.choices[0].message.content
-    # print(result)
-    # print(type(result))
     return response.choices[0].message.content

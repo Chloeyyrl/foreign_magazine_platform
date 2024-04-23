@@ -31,13 +31,16 @@ def chat():
     if not data:
         return jsonify({"error": "No message provided"}), 400
     dialogue_history = data['dialogue_history']
-    role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
-    prompt = f'''
-    You are chatting with a user who is reading a foreign magazine. Please provide a brief and concise answer to each question. 
-    User: {data['msg']}
-    {dialogue_history}
+    # analyzed_sentence = data['sentence']
+    role_setting = "You are an AI with excellent language skills and can answer questions precisely."
+    # You are chatting with a user who is reading a foreign magazine. The user will ask you questions about the sentence you've analyzed before. Please provide a brief and concise answer to each question.
+
+    user_question = f'''
+        User: {data['msg']}
     '''
-    print(dialogue_history)
+    prompt = user_question + dialogue_history
+    print('对话历史:',dialogue_history)
+    print('---------------------------------------------------------------------------')
     answer = call_gpt(role_setting, prompt)
     return jsonify({"answer": answer}), 200
 
@@ -49,11 +52,8 @@ def alynaze_grammar():
         return jsonify({"error": "No sentence provided"}), 400
     role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
     prompt = f'''
-    Explain the following sentence in a simple and easy-to-understand way. You can provide a brief explanation of the sentence. 
-    Your output should look like this:
-    "Meaning of this sentence: 
-    [explanation of the sentence]."
-    {sentence}
+    Your task is to analyze the following sentence to explain its grammatical structure and provide a detailed explaination of this sentence, outputting the result in html format:
+    {sentence['sentence']}
     '''
     grammar_analysis = call_gpt(role_setting, prompt)
     return jsonify({"grammar_analysis": grammar_analysis,'prompt_header':prompt}), 200
@@ -85,13 +85,13 @@ def add_term():
 @app.route('/api/delete_term', methods=['GET'])
 def delete_term():
     id = request.args.get('id')
-    print("id",id)
+    # print("id",id)
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
             sql = "DELETE FROM `vocabulary` WHERE `id`=%s"
             cursor.execute(sql, (id, ))
-            print(cursor.execute(sql, (id, )))
+            # print(cursor.execute(sql, (id, )))
             connection.commit()
             return jsonify({"message": "删除成功"}), 200
     except pymysql.MySQLError as e:
@@ -126,7 +126,7 @@ def show_words_and_phrases():
 def extract_words_and_phrases():
     article_id = request.args.get('article_id')
     user_id = request.args.get('user_id')
-    print("两个id",article_id,user_id)
+    # print("两个id",article_id,user_id)
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
@@ -139,7 +139,7 @@ def extract_words_and_phrases():
             role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
             prompt = f'''
                 Your task is to perform the following actions:
-                1 - Extract the difficult words, culturally loaded terms, and important phrases from the text, enclosed by <>, especially those words that are difficult to understand for non-native speakers.
+                1 - Extract the difficult words, culturally loaded terms, and important phrases from the text, which is enclosed by <>, especially those words that are difficult to understand for non-native speakers.
                 2 - Provide a brief and short definition or explanation of the extracted terms or phrases according to the context, no more than 20 words.
                 3 - Format the output as a list of dictionaries, where each dictionary contains two key-value pairs: "term" and "definition". Ensure each term and its corresponding definition are enclosed in a separate dictionary. The list should look like this:
                     [

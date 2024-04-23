@@ -108,9 +108,6 @@ const toggleShowAll = () => {
 
 <style scoped>
 
-span.title {
-    font-weight: bold;
-}
 
 .time {
     position: absolute; /* 使用绝对定位 */
