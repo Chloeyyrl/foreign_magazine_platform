@@ -20,19 +20,16 @@ const isDisabled = ref();
 let words_and_phrases = reactive({});
 const table_data = ref([]);
 const selectedText = ref('');
-let role = ref('');
 const inputMsg = ref('');
-let grammar_analysis = ref('');
+let grammar_analysis = ref(''); //接收语法分析结果，展示在前端页面
 
 //测试聊天窗口
 let msgList=reactive([
-            {role: "system", msg: "How can I help you?",}, 
-            // {role: "user", time: "", msg: "I'm Chloe",},
-            // {role: "system", time: "", msg: "回答",},
+            {role: "assistant", msg: "How can I help you?",}, 
         ])
 let dialogue_history = ref('');
-const dialogue_history_list = ref([]);
-let dialogue_history_header = ref('');
+const dialogue_history_list = reactive([]);
+
 
 
 // 组件挂载时获取文章数据
@@ -43,16 +40,23 @@ onMounted(() => {
     show_words_and_phrases();
 });
 
-const addMsg = async (msg, role) => {
+const clearMsg = () => {
+    msgList.length = 1;
+}
+
+
+const addMsg = async (role, msg) => {
     inputMsg.value = '';
     const answer = ref('');
-    msgList.push({
-        role: role,
-        msg: msg,
-    });
-    dialogue_history.value  = dialogue_history_header.value + msgList.slice(1).map(item => `${item.role}: ${item.msg}`).join('\n'); //问题应该在这，每次都会把msg.List中的元素加入到dialogue_history中，其实应该只要一遍
+    msgList.push({ role: role, msg: msg });
+    dialogue_history_list.push({role: role, content: msg})
+    // console.log("正在观察dialogue_history_list:",dialogue_history_list)
+    //dialogue_history_list是一个数组，现在要把根据这个数组中的元素生成对话历史记录
+    dialogue_history.value = dialogue_history_list.map(entry => `${entry.role}:${entry.content}`).join('\n')
+    console.log("正在观察:",dialogue_history.value)
 
-    
+    // dialogue_history.value  = dialogue_history_header.value + msgList.slice(1).map(item => `${item.role}: ${item.msg}`).join('\n'); //问题应该在这，每次都会把msg.List中的元素加入到dialogue_history中，其实应该只要一遍
+
     if (role == 'user' ){
         try {
         const response = await axios.post('http://localhost:5000/api/chat', {
@@ -61,8 +65,7 @@ const addMsg = async (msg, role) => {
             sentence : selectedText.value
         });
         answer.value = response.data.answer;
-        addMsg(answer.value, role='system');
-        console.log("answer:",answer.value)
+        addMsg(role='assistant',msg=answer.value);
     } catch (error) {
         console.error('发送聊天内容到后端失败:', error);
     }
@@ -88,22 +91,16 @@ const analyzeGrammar = async () => {
             msgList.length = 1; //每一次对新的句子进行语法分析时自动清空对话历史
             
             if (response.data) {
-                const prompt_header = response.data.prompt_header;
-                // addMsg(prompt_header, role='user'); 
-                dialogue_history_header.value = `user:${prompt_header}\n`; //聊天历史中的第一条记录是语法分析的prompt，但是不添加到msgList中,因为msgList中的记录会显示在聊天框中，而prompt_header不需要显示
-                // console.log('第一条对话历史:', dialogue_history.value);
-                prompt_analyze_grammar = response.data.prompt_header
-                history_entry = {role: 'user', msg: prompt_analyze_grammar}
-                
-                dialogue_history_list.push(history_entry)
+                const analyze_grammar_prompt = ref('')
+                let dialogue_history_entry = ref({})
 
-                role = 'system';
-                const  msg = ref('');
-                msg.value = response.data.grammar_analysis;
-                grammar_analysis.value = msg.value;
-                //addMsg(msg, role); //聊天历史中的第二条记录是语法分析的结果，也不需要显示在聊天框中
-                dialogue_history_header.value += `system:${msg.value}\n`; 
-                // console.log('第一和二条对话历史:', dialogue_history.value);
+                analyze_grammar_prompt.value = response.data.analyze_grammar_prompt
+                dialogue_history_entry = {role: 'user', content: analyze_grammar_prompt.value}
+                dialogue_history_list.push(dialogue_history_entry) //第一条对话历史记录，要存入对话历史记录
+
+                grammar_analysis.value = response.data.grammar_analysis;
+                dialogue_history_entry = {role: 'assistant', content: grammar_analysis.value}
+                dialogue_history_list.push(dialogue_history_entry) //第二条对话历史记录，要存入对话历史记录
             }
         } catch (error) {
             console.error('语法分析出错:', error);
@@ -264,18 +261,18 @@ onBeforeUnmount(() => {
                     <div v-for="(msg,index) in msgList" :key="index">
                             <!-- 循环显示聊天记录 -->
                             <p :class="{'right':msg.role=='user'}">
-                            <el-avatar v-if="msg.role=='system'" icon="UserFilled"></el-avatar>
+                            <el-avatar v-if="msg.role=='assistant'" icon="UserFilled"></el-avatar>
                             <el-avatar v-if="msg.role=='user'" style="float:right;" src="../src/assets/user.jpg">user</el-avatar>
                             <span class="content">{{ msg.msg }}</span>
                             </p>
                     </div>
                     <div class="input-group">  <!-- 使用 flex 布局的 div -->
-                        <el-input type="textarea" v-model="inputMsg" @keyup.enter="addMsg(inputMsg, role='user')" placeholder="请输入内容" clearable autosize></el-input>
-                        <el-button  @click="addMsg(inputMsg, role='user')" icon="Position" type="warning" plain></el-button>
+                        <el-input type="textarea" v-model="inputMsg" @keyup.enter="addMsg('user', inputMsg)" placeholder="请输入内容" clearable autosize></el-input>
+                        <el-button  @click="addMsg('user', inputMsg)" icon="Position" type="warning" plain></el-button>
                     </div>
                     
                 </div>
-                <el-button type="warning" plain style="margin-top: 10px;">清空对话</el-button>
+                <el-button type="warning" plain style="margin-top: 10px" @click="clearMsg"> 清空对话</el-button>
 
                 
 

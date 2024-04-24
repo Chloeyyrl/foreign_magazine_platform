@@ -51,12 +51,25 @@ def alynaze_grammar():
     if not sentence:
         return jsonify({"error": "No sentence provided"}), 400
     role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
-    prompt = f'''
-    Your task is to analyze the following sentence to explain its grammatical structure and provide a detailed explaination of this sentence, outputting the result in html format:
-    {sentence['sentence']}
+    # prompt = f'''Your task is to analyze the following sentence to explain its grammatical structure and provide a detailed explaination of this sentence, the result should be in html format:
+    # 
+    # '''
+    
+    prompt = f'''Your task is to perform the following actions:
+    1 - Analyze the provided sentence to explain its grammatical structure
+    2 - Provide a detailed explaination of this sentence
+    3 - Output the result in html format. The result should look like this:
+        <html>
+            <h3>Original Sentence:</h2>
+            <h3>Grammar Analysis:</h2>
+            <h3>Detailed Explanation:</h2>
+        </html>
+    Provided sentence: {sentence['sentence']}
     '''
+ 
+
     grammar_analysis = call_gpt(role_setting, prompt)
-    return jsonify({"grammar_analysis": grammar_analysis,'prompt_header':prompt}), 200
+    return jsonify({"grammar_analysis": grammar_analysis,'analyze_grammar_prompt':prompt}), 200
     
 
 #添加新的一行
