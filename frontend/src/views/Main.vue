@@ -7,6 +7,8 @@ import axios from 'axios';
 
 const articles = reactive({ data: [] });
 const showAll = ref(false);
+const articles_user_uploaded = reactive({ data: [] });
+const showAll_user_uploaded = ref(false);
 const userId = ref('');
 const router = useRouter(); // 使用路由
 
@@ -14,6 +16,7 @@ const router = useRouter(); // 使用路由
 onMounted(() => {
     userId.value = sessionStorage.getItem('userId');
     getArticles();
+    getArticles_user_uploaded();
 });
 
 // 跳转到文章详情页
@@ -66,9 +69,36 @@ const getArticles = () => {
     });
 };
 
+//展示文章封面（用户上传部分）
+const getArticles_user_uploaded = () => {
+    axios.get('http://localhost:5000/api/get_article_user_uploaded', {
+        params: {
+            userId: userId.value,
+        }
+    })
+    .then(response => {
+        articles_user_uploaded.data = response.data.map(article => ({
+            ...article,
+            isRead: false  // 初始化每篇文章的 isRead 属性
+        })).reverse();
+        console.log(articles_user_uploaded.data);
+        // 检查每篇文章的阅读状态
+        articles_user_uploaded.data.forEach(article => {
+            checkReadingStatus(article);
+        });
+    })
+    .catch(error => {
+        console.error('获取文章内容出错：', error);
+    });
+}
+
 // 控制文章显示的计算属性
 const displayedArticles = () => {
     return showAll.value ? articles.data : articles.data.slice(0,4);
+};
+
+const displayedArticles_user_uploaded = () => {
+    return showAll_user_uploaded.value ? articles_user_uploaded.data : articles_user_uploaded.data.slice(0,4);
 };
 
 // 切换展示状态的方法
@@ -106,8 +136,31 @@ const toggleShowAll = () => {
         </div>
 
         <div class="header-container">
-            <h3>我的外刊</h3>
-            <el-button type="primary" plain @click="goToUpload()">上传外刊</el-button>
+            <h3>我的外刊 <el-button type="primary" plain @click="goToUpload()">上传外刊</el-button></h3>
+            <el-button v-if="articles_user_uploaded.data.length > 4" @click="toggleShowAll" type="primary" plain>
+                {{ showAll ? '点击收起' : '展开全部' }}
+                <el-icon class="icon-space"><ArrowDown /></el-icon>
+            </el-button>
+        </div>
+
+        <div class="articles-row">
+            <div v-for="article in displayedArticles_user_uploaded()" :key="article.id" class="article-card-container">
+                <el-card class="article-card" @click="() => navigateToArticle(article.id)">
+                    
+                        <span class="title">{{ article.title }}</span>
+                        <br />
+                        <span class="time">{{ article.update_time }}</span>
+                    <div class="article-card-bottom">
+                        <el-divider />
+                        <div class="article-info">
+                            <el-tag>{{ article.category }}</el-tag>
+                            <el-icon v-if="article.isRead" style="color:#67c23a;" size="large"><CircleCheckFilled /></el-icon>
+                        </div>
+                    </div>
+                </el-card>
+                
+            </div>
+            
         </div>
     </div>
 </template>

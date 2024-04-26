@@ -82,8 +82,10 @@ def upload():
     file = request.files['file']
     
     current_date = datetime.now().strftime('%Y%m%d')
+    clean_filename = file.filename.replace(' ', '_')
     random_string = secrets.token_hex(4)  # 生成一个8个字符的随机十六进制字符串
-    filename = f"{current_date}_{random_string}_{file.filename}"
+    filename = f"{current_date}_{random_string}_{clean_filename}"
+    print(filename)
     save_path = f'./pdfs/{filename}'
     # 保存文件
     file.save(save_path)
@@ -309,13 +311,29 @@ def check_reading_status():
     finally:
         connection.close()
 
+@app.route('/api/get_article_user_uploaded', methods=['GET'])
+def get_article_user_uploaded():
+    user_id = request.args.get('userId')
 
-@app.route('/api/get_article', methods=['GET'])
-def get_article():
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT * FROM `article`"
+            sql = "SELECT * FROM `article` WHERE `uploaded_by`=%s" #查询用户上传的文章
+            cursor.execute(sql, (user_id,))
+            articles = cursor.fetchall()
+            return jsonify(articles), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
+@app.route('/api/get_article', methods=['GET'])
+def get_article():
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `article` WHERE `uploaded_by` = -1"
             cursor.execute(sql)
             articles = cursor.fetchall()
             return jsonify(articles), 200
