@@ -21,10 +21,15 @@ export default {
       router.push('/');
     };
 
+    const goToMain = () => {
+      router.push('/main');
+    };
+
     return {
       userName,
       userId,
       logout,
+      goToMain
     };
   },
 };
@@ -34,8 +39,8 @@ export default {
 <template>
     <!-- <el-header> -->
       <el-menu class="el-menu-demo" mode="horizontal" style="display: flex; justify-content: space-between;">
-        <el-menu-item index="1">
-            <el-icon><house /></el-icon>
+        <el-menu-item index="1" @click="goToMain">
+            <el-icon><house/></el-icon>
             <b>{{ userName }}</b>
         </el-menu-item>
         <div class="menu-spacer"></div>

@@ -46,7 +46,7 @@ def extract_text_with_formatting(pdf_path):
 
                         # 调整字体大小
                         font_size = span['size']
-                        style_attributes.append(f"font-size: {font_size+4}px;")
+                        style_attributes.append(f"font-size: {font_size+3}px;")
 
                         # Check for bold
                         if span['flags'] & (1 << 4):
@@ -115,8 +115,7 @@ def chat():
     dialogue_history = data['dialogue_history']
     # analyzed_sentence = data['sentence']
     role_setting = "You are an AI with excellent language skills and can answer questions precisely."
-    # You are chatting with a user who is reading a foreign magazine. The user will ask you questions about the sentence you've analyzed before. Please provide a brief and concise answer to each question.
-
+    
     user_question = f'''
         User: {data['msg']}
     '''

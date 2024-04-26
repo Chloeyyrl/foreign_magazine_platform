@@ -23,7 +23,7 @@ const selectedText = ref('');
 const inputMsg = ref('');
 let grammar_analysis = ref(''); //接收语法分析结果，展示在前端页面
 
-//测试聊天窗口
+//聊天窗口
 let msgList=reactive([
             {role: "assistant", msg: "How can I help you?",}, 
         ])
@@ -210,7 +210,6 @@ const fetchArticle = async () => {
         console.error('获取文章信息出错：', error);
     }
 };
-
 
 
 </script>

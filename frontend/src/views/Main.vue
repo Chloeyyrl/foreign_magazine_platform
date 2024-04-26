@@ -87,7 +87,6 @@ const toggleShowAll = () => {
                 <el-icon class="icon-space"><ArrowDown /></el-icon>
             </el-button>
         </div>
-        
         <div class="articles-row">
             <div v-for="article in displayedArticles()" :key="article.id" class="article-card-container">
                 <el-card class="article-card" @click="() => navigateToArticle(article.id)">
