@@ -4,7 +4,12 @@ import pymysql.cursors
 from flask_cors import CORS
 from gpt_resp import call_gpt
 import json
+from datetime import datetime
 import re
+import secrets
+from pdfquery import PDFQuery
+import fitz  # PyMuPDF
+from bs4 import BeautifulSoup
 
 
 app = Flask(__name__)
@@ -20,9 +25,86 @@ DATABASE_CONFIG = {
     'cursorclass': pymysql.cursors.DictCursor
 }
 
+
+
 @app.route('/')
 def home():
     return 'Welcome to the API!'
+
+def extract_text_with_formatting(pdf_path):
+    doc = fitz.open(pdf_path)
+    text = '<div>'
+    for page in doc:
+        blocks = page.get_text("dict")['blocks']
+        for block in blocks:
+            if 'lines' in block:
+                for line in block['lines']:
+                    for span in line['spans']:
+                        
+                        formatted_text = span['text']
+                        style_attributes = []
+
+                        # 调整字体大小
+                        font_size = span['size']
+                        style_attributes.append(f"font-size: {font_size+4}px;")
+
+                        # Check for bold
+                        if span['flags'] & (1 << 4):
+                            formatted_text = f"<b>{formatted_text}</b>"
+                        # Check for italic
+                        if span['flags'] & 2:
+                            formatted_text = f"<i>{formatted_text}</i>"
+                        # Check for superscript
+                        if span['flags'] & (1 << 0):
+                            formatted_text = f"<sup style='color: blue;'>{formatted_text}</sup>"
+                            
+                        # Check for subscript
+                        # if span['flags'] & (1 << 1):
+                        #     formatted_text = f"<sub>{formatted_text}</sub>"
+                        style = ' '.join(style_attributes)
+                        formatted_text = f"<span style='{style}'>{formatted_text}</span>"
+
+                        text += formatted_text + ' '
+                    text += '</br>'
+        text += '</br>'
+    return text
+
+
+#上传文件
+@app.route('/api/upload', methods=['POST'])
+def upload():
+    title = request.form.get('title')
+    category = request.form.get('category')
+    uploaded_by = request.form.get('userid')
+    source = request.form.get('source')
+    update_time = datetime.now().date().strftime('%Y-%m-%d') #字符串格式
+
+    file = request.files['file']
+    
+    current_date = datetime.now().strftime('%Y%m%d')
+    random_string = secrets.token_hex(4)  # 生成一个8个字符的随机十六进制字符串
+    filename = f"{current_date}_{random_string}_{file.filename}"
+    save_path = f'./pdfs/{filename}'
+    # 保存文件
+    file.save(save_path)
+    
+    content = extract_text_with_formatting(save_path)
+    soup = BeautifulSoup(content, 'html.parser')
+
+    # 获取纯文本，去除所有HTML标签
+    art_text = soup.get_text()
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `article` (`title`, `category`, `content`,`art_text`,`article_source`,`uploaded_by`,`update_time`) VALUES (%s, %s, %s, %s, %s,%s, %s)"
+            cursor.execute(sql, (title, category, content, art_text, source, uploaded_by, update_time))
+            connection.commit()
+            return jsonify({"message": "文章上传成功"}), 201
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
 
 #聊天框
 @app.route('/api/chat', methods=['POST'])
@@ -139,7 +221,9 @@ def show_words_and_phrases():
 def extract_words_and_phrases():
     article_id = request.args.get('article_id')
     user_id = request.args.get('user_id')
-    # print("两个id",article_id,user_id)
+    # 判断两个参数是否为空
+    if not article_id and not user_id:
+        print("参数为空")
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
@@ -161,14 +245,18 @@ def extract_words_and_phrases():
                     ]
                 <{art_text}>
             '''
-            extract_result = call_gpt(role_setting, prompt)
+            extract_result = call_gpt(role_setting,prompt)
+            
             
             try:
                 term_list = json.loads(extract_result)
+                print("term_list",term_list,type(term_list))
                 # 遍历json_data中的每个条目
                 for item in term_list:
                     term = item['term']
                     definition = item['definition'] 
+                    print("term----",term)
+                    print("definition---",definition)
 
                     insert_sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
                     cursor.execute(insert_sql, (user_id, article_id, term, definition))

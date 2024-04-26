@@ -2,7 +2,7 @@
 import Header from '../components/Header.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
-import { ref, reactive, onMounted, watch,onBeforeUnmount} from 'vue';
+import { ref, reactive, onMounted} from 'vue';
 
 import { ElMessage, ElButton, ElTable, ElTableColumn, ElInput } from 'element-plus';
 import {Star, Delete, Edit, Check, UserFilled} from '@element-plus/icons-vue'
@@ -188,6 +188,7 @@ const extractWordsAndPhrases = async() => {
 
     } catch (error) {
         console.error('抽取单词和短语出错：', error);
+        ElMessage.error('抽取失败，请检查服务器状态。');
     }
 };
 
@@ -210,9 +211,8 @@ const fetchArticle = async () => {
     }
 };
 
-onBeforeUnmount(() => {
-  document.removeEventListener('mouseup', selectText);
-});
+
+
 </script>
 
 <template>
@@ -232,6 +232,7 @@ onBeforeUnmount(() => {
                 <h1>
                     <el-button type="primary" plain @click="extractWordsAndPhrases" :disabled="isDisabled">重点词汇短语</el-button>
                     <el-button type="warning" plain @click="analyzeGrammar">语法分析</el-button>
+                    
                 </h1>
                 <el-table :data="table_data" style="width: 100%">
                     <el-table-column prop="term" label="词汇或短语" width="200px">
@@ -250,6 +251,7 @@ onBeforeUnmount(() => {
                         <template #default="{row}">
                             <el-button type="primary" plain icon = "Check" size='small' circle @click="() => confirmRow(row)" v-if="row.editable"></el-button>
                             <el-button type="danger"  plain icon="Delete" size='small' circle @click="deleteTerm(row)" v-else></el-button>
+        
                         </template>
                     </el-table-column>
                 </el-table>

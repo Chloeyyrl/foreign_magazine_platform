@@ -23,7 +23,18 @@ const routes = [
         name: 'Read',
         component: () => import("../views/Read.vue"),
         props: true  // 使组件能够通过 props 接收路由参数
-    }
+    },
+    {
+        path: '/upload',
+        name: 'Upload',
+        component: () =>import("../views/Upload.vue")
+        },
+        {
+            path: '/test',
+            name: 'Test',
+            component: () =>import("../views/Test.vue")
+            },
+
 
     
 ];

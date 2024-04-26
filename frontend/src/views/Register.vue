@@ -13,8 +13,8 @@
             <el-input show-password v-model="confirm_password"></el-input>
           </el-form-item>
           <el-form-item>
-            <el-link style="margin-right: 10px; color:white" @click="goToLogin">已有帐号？直接登录</el-link>
-            <el-button type="default" @click="onRegister">注册</el-button>
+            <el-link style="margin-right: 10px;" @click="goToLogin">已有帐号？直接登录</el-link>
+            <el-button type="warning" plain @click="onRegister">注册</el-button>
           </el-form-item>
         </el-form>
       </el-col>
@@ -27,7 +27,7 @@
 import { reactive, toRefs } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { ElForm, ElFormItem, ElInput, ElButton, ElLink } from 'element-plus';
+import { ElForm, ElFormItem, ElInput, ElButton, ElLink, ElMessage } from 'element-plus';
 
 export default {
   components: {
@@ -55,7 +55,7 @@ export default {
       try {
         const response = await axios.post('http://localhost:5000/api/register', registerForm);
         if (response.status === 201) {
-          alert(response.data.message);
+          ElMessage.success(response.data.message);
           router.push('/'); 
         }  
       } 
@@ -80,9 +80,9 @@ export default {
 </script>
 
 
-<style>
+<style scoped>
 .background-image {
-  background-image: url('../assets/dim-hou-93AcQpzcASE-unsplash.jpg'); /* Adjust the path as necessary */
+  background-image: url('../assets/background1.png'); /* Adjust the path as necessary */
   background-size: cover; /* Cover the entire area */
   background-position: center center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
@@ -91,12 +91,13 @@ export default {
 }
 /* Overall form styling */
 .form-container {
-  margin-top: 150px; /* Move form down */
-  padding: 20px;
+  margin-top: 240px; /* Move form down */
+  margin-left: 60px;
+  padding: 20px 20px 20px 0;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1); /* subtle shadow */
-  background-color: rgba(255, 255, 255, 0.5); /* Adjust opacity here */
-  backdrop-filter: blur(50px); 
+  background-color: rgba(255, 255, 255, 0.9); /* Adjust opacity here */
+  backdrop-filter: blur(500px); 
 }
 
 /* Style individual form items */

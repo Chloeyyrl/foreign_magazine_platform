@@ -1,27 +1,49 @@
-def format_dialogue_for_gpt(dialogue_history):
-    formatted_history = ""
-    for entry in dialogue_history:
-        for role, text in entry.items():
-            formatted_history += f"{role}: {text}\n"
-    return formatted_history
+import tkinter as tk
+from tkinter import filedialog
+import fitz  # PyMuPDF
 
-# 假设的对话历史
-dialogue_history = [
-    {'user': 'How is the weather today?'},
-    {'assistant': 'It is quite sunny today.'},
-    {'user': 'Do you recommend any outdoor activity?'},
-]
+def open_pdf():
+    # 创建文件选择对话框让用户选择一个PDF文件
+    root = tk.Tk()
+    root.withdraw()  # 不显示主窗口
+    file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
+    if not file_path:
+        return "No file selected."
 
-# 格式化对话历史为字符串
-formatted_history = format_dialogue_for_gpt(dialogue_history)
+    doc = fitz.open(file_path)  # 打开PDF文件
+    html_content = "<html><body>"
 
-# 新的用户输入
-new_user_input = {'user': 'What about tomorrow?'}
+    # 遍历每一页
+    for page in doc:
+        blocks = page.get_text("dict")["blocks"]
+        for block in blocks:
+            if block['type'] == 0:  # 检查文本块
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        text = span["text"]
+                        if text.startswith('\t'):
+                            html_content += "<br>"
+                        style = ""
+                        if span['flags'] & 1:  # 粗体
+                            style += "font-weight:bold;"
+                        if span['flags'] & 2:  # 斜体
+                            style += "font-style:italic;"
+                        if span['flags'] & 4:  # 上标
+                            style += "vertical-align:super;"
+                        if span['flags'] & 8:  # 下标
+                            style += "vertical-align:sub;"
 
-# 更新对话历史
-dialogue_history.append(new_user_input)
+                        html_content += f'<span style="{style}">{text}</span>'
+                    html_content += "<br>"  # 每行后添加换行
 
-# 再次格式化对话历史
-formatted_history = format_dialogue_for_gpt(dialogue_history)
+    html_content += "</body></html>"
+    doc.close()
 
-print(formatted_history,type(formatted_history))
+    # 可以选择保存HTML到文件或直接返回字符串
+    with open("output.html", "w") as f:
+        f.write(html_content)
+    
+    return "HTML file has been created."
+
+# 运行函数
+print(open_pdf())

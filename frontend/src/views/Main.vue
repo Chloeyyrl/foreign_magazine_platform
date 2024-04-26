@@ -26,6 +26,13 @@ const navigateToArticle = (articleId) => {
     });
 };
 
+// 跳转到上传文章页
+const goToUpload = () => {
+    router.push('/upload').catch(error => {
+        console.error('Routing error:', error);
+    });
+};
+
 const checkReadingStatus = (article) => {
     axios.get('http://localhost:5000/api/check_reading_status', {
         params: {
@@ -88,19 +95,21 @@ const toggleShowAll = () => {
                         <span class="title">{{ article.title }}</span>
                         <br />
                         <span class="time">{{ article.update_time }}</span>
-                        <!-- {{ article.art_text.substring(0, 50) }}{{ article.art_text.length > 50 ? '...' : '' }} -->
-                   
                     <div class="article-card-bottom">
                         <el-divider />
                         <div class="article-info">
                             <el-tag>{{ article.category }}</el-tag>
-                            <el-icon v-if="article.isRead" style="color:#67c23a;"><CircleCheckFilled /></el-icon>
+                            <el-icon v-if="article.isRead" style="color:#67c23a;" size="large"><CircleCheckFilled /></el-icon>
                         </div>
                     </div>
                 </el-card>
             </div>
         </div>
-        <h3>我的外刊</h3>
+
+        <div class="header-container">
+            <h3>我的外刊</h3>
+            <el-button type="primary" plain @click="goToUpload()">上传外刊</el-button>
+        </div>
     </div>
 </template>
     
@@ -130,6 +139,10 @@ const toggleShowAll = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .articles-row {
@@ -137,13 +150,14 @@ const toggleShowAll = () => {
   flex-wrap: wrap;
   justify-content: flex-start; /* Or 'space-between' if you want equal spacing */
   margin: -8px; /* Adjust this value based on your gap preference */
-  
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .article-card-container {
   flex: 0 0 25%; /* This ensures that each card takes up 25% of the container's width */
   max-width: 25%; /* This ensures that each card's maximum width is 25% of the container's width */
-  padding: 8px; /* Adjust this value based on your gap preference */
+  padding: 10px; /* Adjust this value based on your gap preference */
   box-sizing: border-box;
 }
 

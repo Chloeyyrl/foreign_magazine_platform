@@ -2,7 +2,7 @@
     <el-row class="background-image">
       <el-col :span="8"></el-col>
       <el-col :span="8">
-        <el-form class="form-container" label-width="80" style="width: 400px;">
+        <el-form class="form-container" label-width="80" style="width: 400px;height: 200px;">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="loginForm.username"></el-input>
           </el-form-item>
@@ -10,8 +10,8 @@
             <el-input show-password v-model="loginForm.password"></el-input>
           </el-form-item>
           <el-form-item>
-            <el-link style="margin-right: 10px; color:white" @click="goToRigister">没有帐号？立即注册</el-link>
-            <el-button type="default" @click="onLogin">登录</el-button>
+            <el-link style="margin-right: 10px" @click="goToRigister">没有帐号？立即注册</el-link>
+            <el-button type="warning" plain @click="onLogin">登录</el-button>
           </el-form-item>
         </el-form>
       </el-col>
@@ -80,9 +80,9 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .background-image {
-  background-image: url('../assets/background.png'); /* Adjust the path as necessary */
+  background-image: url('../assets/background1.png'); /* Adjust the path as necessary */
   background-size: cover; /* Cover the entire area */
   background-position: center center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
@@ -91,11 +91,12 @@ export default {
 }
 /* Overall form styling */
 .form-container {
-  margin-top: 150px; /* Move form down */
-  padding: 20px;
+  margin-top: 260px; /* Move form down */
+  margin-left: 60px;
+  padding: 40px 20px 0 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1); /* subtle shadow */
-  background-color: rgba(255, 255, 255, 0.5); /* Adjust opacity here */
+  background-color: rgba(255, 255, 255, 0.9); /* Adjust opacity here */
   backdrop-filter: blur(50px); 
 }
 
