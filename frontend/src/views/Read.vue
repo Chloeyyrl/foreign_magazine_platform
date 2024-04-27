@@ -2,7 +2,7 @@
 import Header from '../components/Header.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
-import { ref, reactive, onMounted} from 'vue';
+import { ref, reactive, onMounted, computed} from 'vue';
 
 import { ElMessage, ElButton, ElTable, ElTableColumn, ElInput } from 'element-plus';
 import {Star, Delete, Edit, Check, UserFilled} from '@element-plus/icons-vue'
@@ -38,7 +38,67 @@ onMounted(() => {
     document.addEventListener('mouseup', selectText);
     fetchArticle();
     show_words_and_phrases();
+    
 });
+
+
+
+//语音播放
+ // 根据句子结束符分割文本
+//  let currentIndex = 0;
+// const speak = () => {
+    
+//     const textParts = article.data.art_text.split(/[\.\?!;]\s/); 
+//     if (currentIndex >= textParts.length) {
+//         console.log("朗读完毕");
+//         return;  // 所有部分已朗读完毕
+//     }
+//     if (speechSynthesis.speaking) {
+//         speechSynthesis.cancel(); // 停止当前的朗读以防重叠
+//     }
+//     const utterance = new SpeechSynthesisUtterance(textParts[currentIndex]);
+//     utterance.lang = 'en-US';  // 确保语言设置匹配文本语言
+//     utterance.onend = () => {
+//         console.log("完成朗读段落：", textParts[currentIndex]);
+//         currentIndex++;  // 移动到下一个部分
+//         speak();  // 朗读下一部分
+//     };
+//     utterance.onerror = (event) => {
+//         console.error('朗读发生错误:', event.error);
+//     };
+
+//     speechSynthesis.speak(utterance);
+//     console.log("正在朗读：", textParts[currentIndex]);
+// }
+
+
+// const  pause = () => {
+//   if (speechSynthesis.speaking) {
+//     speechSynthesis.pause();
+//   }
+// }
+
+// const resume = () => {
+//   if (speechSynthesis.paused) {
+//     speechSynthesis.resume();
+//   }
+// }
+
+const finishReading = () => {
+    try {
+        axios.post('http://localhost:5000/api/finish_reading', 
+            {
+                article_id: route.params.id,
+                user_id: userId.value
+            }
+        );
+        ElMessage.success('祝贺！');
+    } catch (error) {
+        console.error('阅读状态修改出错:', error);
+        ElMessage.error('完成阅读失败');
+    }
+    
+}
 
 const clearMsg = () => {
     msgList.length = 1;
@@ -223,9 +283,25 @@ const fetchArticle = async () => {
                 <div>
                     <span style="margin-right: 10px;">{{ article.data.update_time }}</span> 
                     <span style="margin-right: 10px;">{{ article.data.article_source }}</span>
-                    <el-button type="warning" :icon="Star" circle plain/>
+                    
                 </div>
                 <div v-html="article.data.content" @mouseup="selectText"></div>
+                <div style="padding-top: 10px;"><el-button type="primary" plain @click="finishReading">完成阅读</el-button></div>
+                <el-backtop :bottom="30">
+                    <div
+                    style="
+                        height: 100%;
+                        width: 100%;
+                        background-color: var(--el-bg-color-overlay);
+                        box-shadow: var(--el-box-shadow-lighter);
+                        text-align: center;
+                        line-height: 40px;
+                        color: #409eff;
+                    "
+                    >
+                    <el-icon><Top /></el-icon>
+                    </div>
+                </el-backtop>
             </el-col>
             <el-col :span="10" class="func">
                 <h1>

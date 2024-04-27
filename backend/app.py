@@ -70,6 +70,33 @@ def extract_text_with_formatting(pdf_path):
     return text
 
 
+# 修改阅读状态
+@app.route('/api/finish_reading', methods=['POST'])
+def finish_reading():
+    user_id = request.json['user_id']
+    article_id = request.json['article_id']
+    print('user_id:',user_id)
+    print(user_id, article_id)
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    # 先查询是否已经存在，再插入
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `reading_status` WHERE `user_id`=%s AND `article_id`=%s"
+            cursor.execute(sql, (user_id, article_id))
+            if cursor.fetchone() is not None:
+                return jsonify({"message": "已经阅读过"}), 200
+
+            insert_sql = "INSERT INTO `reading_status` (`user_id`, `article_id`) VALUES (%s, %s)"
+            cursor.execute(insert_sql, (user_id, article_id))
+            connection.commit()
+            return jsonify({"message": "修改阅读状态成功"}), 201
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
+
+
 #上传文件
 @app.route('/api/upload', methods=['POST'])
 def upload():
