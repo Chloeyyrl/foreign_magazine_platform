@@ -57,7 +57,7 @@ def fetch_article_info(target_url):
         # 添加或追加样式
         style_tag = art_content_div.find('style')
         if style_tag:
-            style_tag.string += additional_css  # 追加 CSS
+            style_tag.string += additional_css  
         else:
             # 如果没有找到 style 标签，创建一个新的并添加到 art_content_div
             new_style_tag = soup.new_tag('style')
@@ -82,7 +82,7 @@ def fetch_article_info(target_url):
         for img in images:
             if img.has_attr('src'):
                 absolute_url = urljoin(target_url, img['src'])
-                img['src'] = absolute_url  # 更新 src 属性
+                img['src'] = absolute_url  
 
         # 更新 content 为修改后的 art_content_div
         content = art_content_div

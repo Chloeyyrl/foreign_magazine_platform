@@ -2,6 +2,7 @@
 import Header from '../components/Header.vue';
 import { ref, reactive, onMounted} from 'vue';
 import { useRouter } from 'vue-router';
+import { Search } from '@element-plus/icons-vue'
 
 import axios from 'axios';
 
@@ -11,6 +12,7 @@ const articles_user_uploaded = reactive({ data: [] });
 const showAll_user_uploaded = ref(false);
 const userId = ref('');
 const router = useRouter(); // 使用路由
+const searchContent = ref(''); 
 
 // 组件挂载时获取文章数据
 onMounted(() => {
@@ -92,7 +94,7 @@ const getArticles_user_uploaded = () => {
     });
 }
 
-// 控制文章显示的计算属性
+
 const displayedArticles = () => {
     return showAll.value ? articles.data : articles.data.slice(0,4);
 };
@@ -105,13 +107,57 @@ const displayedArticles_user_uploaded = () => {
 const toggleShowAll = () => {
     showAll.value = !showAll.value;
 };
+
+const SearchKeywords = (searchContent) => {
+    axios.get('http://localhost:5000/api/search_article', {
+        params: {
+            searchContent: searchContent,
+            user_id : userId.value
+        }
+    })
+    .then(response => {
+        articles.data = response.data.filtered_articles.map(article => ({
+            ...article,
+            isRead: false  // 初始化每篇文章的 isRead 属性
+        })).reverse();
+        // 检查每篇文章的阅读状态
+        articles.data.forEach(article => {
+            checkReadingStatus(article);
+        });
+
+        articles_user_uploaded.data = response.data.filterd_articles_user.map(article => ({
+            ...article,
+            isRead: false  // 初始化每篇文章的 isRead 属性
+        })).reverse();
+        console.log("!!1!11!",articles_user_uploaded.data);
+        // 检查每篇文章的阅读状态
+        articles_user_uploaded.data.forEach(article => {
+            checkReadingStatus(article);
+        });
+
+    })
+    .catch(error => {
+        console.error('获取限定文章内容出错：', error);
+    });
+};
 </script>
 
 <template>
     <div>
         <Header/>
+        <el-row>
+            <el-col :span="8"></el-col>
+            <el-col :span="8" style="margin-top: 30px; margin-left: 20px;"> 
+                <el-input
+                    v-model="searchContent"
+                    placeholder="请输入搜索内容"
+                    :suffix-icon="Search"
+                    @keyup.enter="SearchKeywords(searchContent)"
+                    />
+            </el-col>
+        </el-row>
         <div class="header-container">
-            <h3>外刊广场</h3>
+            <h3>文章中心</h3>
             <el-button v-if="articles.data.length > 4" @click="toggleShowAll" type="primary" plain>
                 {{ showAll ? '点击收起' : '展开全部' }}
                 <el-icon class="icon-space"><ArrowDown /></el-icon>
@@ -120,10 +166,9 @@ const toggleShowAll = () => {
         <div class="articles-row">
             <div v-for="article in displayedArticles()" :key="article.id" class="article-card-container">
                 <el-card class="article-card" @click="() => navigateToArticle(article.id)">
-                    
-                        <span class="title">{{ article.title }}</span>
-                        <br />
-                        <span class="time">{{ article.update_time }}</span>
+                    <span class="title">{{ article.title }}</span>
+                    <br />
+                    <span class="time">{{ article.update_time }}</span>
                     <div class="article-card-bottom">
                         <el-divider />
                         <div class="article-info">
@@ -136,7 +181,7 @@ const toggleShowAll = () => {
         </div>
 
         <div class="header-container">
-            <h3>我的外刊 <el-button type="primary" plain @click="goToUpload()">上传外刊</el-button></h3>
+            <h3>我的文章 <el-button type="primary" plain @click="goToUpload()">上传文件</el-button></h3>
             <el-button v-if="articles_user_uploaded.data.length > 4" @click="toggleShowAll" type="primary" plain>
                 {{ showAll ? '点击收起' : '展开全部' }}
                 <el-icon class="icon-space"><ArrowDown /></el-icon>

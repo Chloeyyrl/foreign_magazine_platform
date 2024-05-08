@@ -44,7 +44,7 @@ def extract_text_with_formatting(pdf_path):
                         formatted_text = span['text']
                         style_attributes = []
 
-                        # 调整字体大小
+                        # Adjust font size
                         font_size = span['size']
                         style_attributes.append(f"font-size: {font_size+3}px;")
 
@@ -58,9 +58,6 @@ def extract_text_with_formatting(pdf_path):
                         if span['flags'] & (1 << 0):
                             formatted_text = f"<sup style='color: blue;'>{formatted_text}</sup>"
                             
-                        # Check for subscript
-                        # if span['flags'] & (1 << 1):
-                        #     formatted_text = f"<sub>{formatted_text}</sub>"
                         style = ' '.join(style_attributes)
                         formatted_text = f"<span style='{style}'>{formatted_text}</span>"
 
@@ -104,15 +101,15 @@ def upload():
     category = request.form.get('category')
     uploaded_by = request.form.get('userid')
     source = request.form.get('source')
-    update_time = datetime.now().date().strftime('%Y-%m-%d') #字符串格式
 
+    update_time = datetime.now().date().strftime('%Y-%m-%d') #字符串格式
     file = request.files['file']
-    
     current_date = datetime.now().strftime('%Y%m%d')
     clean_filename = file.filename.replace(' ', '_')
-    random_string = secrets.token_hex(4)  # 生成一个8个字符的随机十六进制字符串
+    random_string = secrets.token_hex(4)  
     filename = f"{current_date}_{random_string}_{clean_filename}"
-    print(filename)
+
+    #print(filename)
     save_path = f'./pdfs/{filename}'
     # 保存文件
     file.save(save_path)
@@ -148,6 +145,7 @@ def chat():
     user_question = f'''
         User: {data['msg']}
     '''
+    #prompt += user_question
     prompt = user_question + dialogue_history
     print('对话历史:',dialogue_history)
     print('---------------------------------------------------------------------------')
@@ -161,9 +159,6 @@ def alynaze_grammar():
     if not sentence:
         return jsonify({"error": "No sentence provided"}), 400
     role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
-    # prompt = f'''Your task is to analyze the following sentence to explain its grammatical structure and provide a detailed explaination of this sentence, the result should be in html format:
-    # 
-    # '''
     
     prompt = f'''Your task is to perform the following actions:
     1 - Analyze the provided sentence to explain its grammatical structure
@@ -235,6 +230,7 @@ def show_words_and_phrases():
             sql = "SELECT * FROM `vocabulary` WHERE `user_id`=%s AND `article_id`=%s"
             cursor.execute(sql, (user_id, article_id))
             words_and_phrases = cursor.fetchall()
+
             if not words_and_phrases:
                 return jsonify({"is_disabled":False}), 200
             else:
@@ -256,7 +252,7 @@ def extract_words_and_phrases():
     try:
         with connection.cursor() as cursor:
             # 调用GPT抽取难词和短语
-            sql = "SELECT * FROM `article` WHERE `id`=%s"
+            sql = "SELECT * FROM `article` WHERE `id`=%s "
             cursor.execute(sql, (article_id,))
             article = cursor.fetchone()
 
@@ -274,17 +270,17 @@ def extract_words_and_phrases():
                 <{art_text}>
             '''
             extract_result = call_gpt(role_setting,prompt)
-            
-            
+            print(extract_result)
+    
             try:
                 term_list = json.loads(extract_result)
-                print("term_list",term_list,type(term_list))
+                # print("term_list",term_list,type(term_list))
                 # 遍历json_data中的每个条目
                 for item in term_list:
                     term = item['term']
                     definition = item['definition'] 
-                    print("term----",term)
-                    print("definition---",definition)
+                    # print("term----",term)
+                    # print("definition---",definition)
 
                     insert_sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
                     cursor.execute(insert_sql, (user_id, article_id, term, definition))
@@ -303,6 +299,7 @@ def extract_words_and_phrases():
 @app.route('/api/get_article_info', methods=['GET'])
 def get_article_info():
     article_id = request.args.get('article_id')
+    user_id = request.args.get('user_id')
 
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
@@ -310,7 +307,11 @@ def get_article_info():
             sql = "SELECT * FROM `article` WHERE `id`=%s"
             cursor.execute(sql, (article_id,))
             article = cursor.fetchone()
-            return jsonify(article), 200
+            highlighted_terms_sql = "SELECT `term` FROM `vocabulary` WHERE `article_id`=%s AND `user_id`=%s"
+            cursor.execute(highlighted_terms_sql, (article_id, user_id))
+            highlighted_terms = cursor.fetchall()
+            
+            return jsonify({'article':article,'highlighted_terms':highlighted_terms}), 200
     except pymysql.MySQLError as e:
         return jsonify({"message": "数据库错误", "错误": str(e)}), 500
     finally:
@@ -364,6 +365,27 @@ def get_article():
             cursor.execute(sql)
             articles = cursor.fetchall()
             return jsonify(articles), 200
+    except pymysql.MySQLError as e:
+        return jsonify({"message": "数据库错误", "错误": str(e)}), 500
+    finally:
+        connection.close()
+
+@app.route('/api/search_article', methods=['GET'])
+def search_article():
+    keyword = request.args.get('searchContent')
+    user_id = request.args.get('user_id')
+
+    connection = pymysql.connect(**DATABASE_CONFIG)
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM `article` WHERE (`title` LIKE %s OR `content` LIKE %s) AND `uploaded_by`=-1"
+            cursor.execute(sql, (f"%{keyword}%", f"%{keyword}%"))
+            articles = cursor.fetchall()
+
+            sql_user = "SELECT * FROM `article` WHERE (`title` LIKE %s OR `content` LIKE %s) AND `uploaded_by` =%s"
+            cursor.execute(sql_user, (f"%{keyword}%", f"%{keyword}%",user_id))
+            articles_user = cursor.fetchall()
+            return jsonify({'filtered_articles':articles,'filterd_articles_user':articles_user}), 200
     except pymysql.MySQLError as e:
         return jsonify({"message": "数据库错误", "错误": str(e)}), 500
     finally:

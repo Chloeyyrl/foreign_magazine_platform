@@ -42,11 +42,7 @@ const onUpload = () => {
             formData.append('userid', userid.value);
 
             try {
-                const response = await axios.post('http://localhost:5000/api/upload', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
+                const response = await axios.post('http://localhost:5000/api/upload', formData);
                 if (response.status === 201) {
                     ElMessage.success(response.data.message);
                     resetForm(); // 成功后重置表单

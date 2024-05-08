@@ -2,7 +2,7 @@
 import Header from '../components/Header.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
-import { ref, reactive, onMounted, computed} from 'vue';
+import { ref, reactive, onMounted, computed, watchEffect} from 'vue';
 
 import { ElMessage, ElButton, ElTable, ElTableColumn, ElInput } from 'element-plus';
 import {Star, Delete, Edit, Check, UserFilled} from '@element-plus/icons-vue'
@@ -22,10 +22,14 @@ const table_data = ref([]);
 const selectedText = ref('');
 const inputMsg = ref('');
 let grammar_analysis = ref(''); //接收语法分析结果，展示在前端页面
+let highlightTerms = ref([]); //接收高亮的单词或短语
+// 定义一个响应式的计算变量来处理文章内容的高亮
+const highlightedContent = ref('');
 
 //聊天窗口
-let msgList=reactive([
-            {role: "assistant", msg: "How can I help you?",}, 
+let msgList=reactive(
+        [
+            {role: "assistant", msg: "How can I help you?"}, 
         ])
 let dialogue_history = ref('');
 const dialogue_history_list = reactive([]);
@@ -184,6 +188,7 @@ const confirmRow = async (row) => {
         }
     });
     ElMessage.success('添加成功');
+    fetchArticle();
   } catch (error) {
     console.error('添加词汇出错:', error);
     ElMessage.error('添加失败');
@@ -200,6 +205,7 @@ const addRow = () => {
         editable: true
     };
     table_data.value.push(newRow);
+    
 };
 
 //删除某行
@@ -209,6 +215,7 @@ const deleteTerm = async (row) => {
             params:{id: row.id}
         });
         table_data.value = table_data.value.filter(term => term.id !== row.id);
+        fetchArticle();
     } catch (error) {
         console.error('删除词汇出错:', error);
     }
@@ -244,7 +251,8 @@ const extractWordsAndPhrases = async() => {
             }
         });
         console.log("单词和短语抽取状态：",response.data.message)
-        show_words_and_phrases()
+        show_words_and_phrases();
+        fetchArticle();
 
     } catch (error) {
         console.error('抽取单词和短语出错：', error);
@@ -256,6 +264,18 @@ const props = defineProps({
     id: String
 });
 
+// 观察词汇列表和文章内容变化并更新高亮内容
+// watchEffect(() => {
+//   highlightedContent.value = article.data.content; // 先设置为原始文章内容
+//   highlightTerms.value.forEach(term => {
+//     const regex = new RegExp(`(${term.term})`, 'gi');
+//     highlightedContent.value = highlightedContent.value.replace(regex, `<mark style='background-color:#d1edc4'>$1</mark>`);
+//   });
+// });
+
+
+
+
 const fetchArticle = async () => {
     try {
         const response = await axios.get(`http://localhost:5000/api/get_article_info`, {
@@ -264,8 +284,17 @@ const fetchArticle = async () => {
                 user_id: userId.value
             }
         });
-        //console.log(route.params.id)
-        article.data = response.data;  // 更新文章内容
+        
+        article.data = response.data.article;  // 更新文章内容
+        highlightTerms = response.data.highlighted_terms
+        
+        highlightTerms.forEach(term => {   
+        const regex = new RegExp(`(${term['term']})`);
+        article.data.content = article.data.content.replace(regex, `<mark style='background-color:#d1edc4'>$1</mark>`);
+    });
+
+        
+
     } catch (error) {
         console.error('获取文章信息出错：', error);
     }
@@ -286,7 +315,7 @@ const fetchArticle = async () => {
                     
                 </div>
                 <div v-html="article.data.content" @mouseup="selectText"></div>
-                <div style="padding-top: 10px;"><el-button type="primary" plain @click="finishReading">完成阅读</el-button></div>
+                <div style="padding-top: 20px;"><el-button type="primary" plain @click="finishReading">完成阅读</el-button></div>
                 <el-backtop :bottom="30">
                     <div
                     style="
