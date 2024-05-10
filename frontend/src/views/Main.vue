@@ -108,6 +108,10 @@ const toggleShowAll = () => {
     showAll.value = !showAll.value;
 };
 
+const toggleShowAll_user_uploaded = () => {
+    showAll_user_uploaded.value = !showAll_user_uploaded.value;
+};
+
 const SearchKeywords = (searchContent) => {
     axios.get('http://localhost:5000/api/search_article', {
         params: {
@@ -182,8 +186,8 @@ const SearchKeywords = (searchContent) => {
 
         <div class="header-container">
             <h3>我的文章 <el-button type="primary" plain @click="goToUpload()">上传文件</el-button></h3>
-            <el-button v-if="articles_user_uploaded.data.length > 4" @click="toggleShowAll" type="primary" plain>
-                {{ showAll ? '点击收起' : '展开全部' }}
+            <el-button v-if="articles_user_uploaded.data.length > 4" @click="toggleShowAll_user_uploaded" type="primary" plain>
+                {{ showAll_user_uploaded ? '点击收起' : '展开全部' }}
                 <el-icon class="icon-space"><ArrowDown /></el-icon>
             </el-button>
         </div>

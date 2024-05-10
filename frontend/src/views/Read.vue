@@ -2,7 +2,7 @@
 import Header from '../components/Header.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
-import { ref, reactive, onMounted, computed, watchEffect} from 'vue';
+import { ref, reactive, onMounted, computed, watch} from 'vue';
 
 import { ElMessage, ElButton, ElTable, ElTableColumn, ElInput } from 'element-plus';
 import {Star, Delete, Edit, Check, UserFilled} from '@element-plus/icons-vue'
@@ -34,7 +34,16 @@ let msgList=reactive(
 let dialogue_history = ref('');
 const dialogue_history_list = reactive([]);
 
+// 定义音频地址列表和当前索引
+const audioState = reactive({
+  files: [
+    
+  ],
+  currentIndex: null
+});
+console.log("----:",audioState.files)
 
+const audioPlayer = ref(null);
 
 // 组件挂载时获取文章数据
 onMounted(() => {
@@ -42,14 +51,17 @@ onMounted(() => {
     document.addEventListener('mouseup', selectText);
     fetchArticle();
     show_words_and_phrases();
+
     
+
+   
 });
 
 
 
-//语音播放
- // 根据句子结束符分割文本
-//  let currentIndex = 0;
+// 语音播放
+//  根据句子结束符分割文本
+// let currentIndex = 0;
 // const speak = () => {
     
 //     const textParts = article.data.art_text.split(/[\.\?!;]\s/); 
@@ -274,7 +286,7 @@ const props = defineProps({
 // });
 
 
-
+console.log(audioState.currentIndex)
 
 const fetchArticle = async () => {
     try {
@@ -287,20 +299,70 @@ const fetchArticle = async () => {
         
         article.data = response.data.article;  // 更新文章内容
         highlightTerms = response.data.highlighted_terms
+
+        audioState.currentIndex = 0; // 初始化音频索引
+        const audioList = article.data.audio_path.split(',')
+        console.log('audioList:',audioList)
+        for (let i = 0; i < audioList.length-1; i++) {
+            audioState.files.push(audioList[i])
+            
+        }
+        console.log(audioState.files)
+        
+
+        
         
         highlightTerms.forEach(term => {   
         const regex = new RegExp(`(${term['term']})`);
         article.data.content = article.data.content.replace(regex, `<mark style='background-color:#d1edc4'>$1</mark>`);
     });
 
-        
-
     } catch (error) {
         console.error('获取文章信息出错：', error);
     }
 };
 
+//组件挂载后，获取音频文件地址
+// fetchAudioFiles = async () => {
+//   try {
+//     const response = await axios.get('http://localhost:5000/api/get_audio_files');
+//     audioState.files = response.data.files;
+//   } catch (error) {
+//     console.error('获取音频文件地址出错:', error);
+//   }
+// };
 
+
+
+
+
+
+
+const prevAudio = () => {
+  if (audioState.currentIndex > 0) {
+    audioState.currentIndex -= 1;
+  } else {
+    audioState.currentIndex = audioState.files.length - 1; // 循环到最后一个
+  }
+};
+
+const nextAudio = () => {
+  if (audioState.currentIndex < audioState.files.length - 1) {
+    audioState.currentIndex += 1; // 更新索引
+  } else {
+    audioState.currentIndex = 0; // 循环到第一个
+  }
+};
+
+watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
+    if(oldIndex == null){
+        audioPlayer.value.load(); // 初始化，只需要重新加载新的音频源
+    }
+    else{
+        audioPlayer.value.load(); // 重新加载新的音频源
+        audioPlayer.value.play(); // 当切换音频时自动播放
+    }
+});
 </script>
 
 <template>
@@ -309,13 +371,33 @@ const fetchArticle = async () => {
         <el-row>
             <el-col :span="14" class="art">
                 <h1>{{ article.data.title }} </h1>
+
+                
+                
+
+                
+                
                 <div>
                     <span style="margin-right: 10px;">{{ article.data.update_time }}</span> 
                     <span style="margin-right: 10px;">{{ article.data.article_source }}</span>
-                    
+
                 </div>
+
+                <div class="audio-player">
+                <audio ref="audioPlayer" controls class="audio-control">
+                <source :src="audioState.files[audioState.currentIndex]" type="audio/mpeg" />
+                您的浏览器不支持 audio 元素。
+                </audio>
+                
+                <div class="button-group">
+                    <el-button type="success" plain  @click="prevAudio"><el-icon><CaretLeft /></el-icon></el-button>
+                    <el-button type="success" plain  @click="nextAudio"><el-icon><CaretRight /></el-icon></el-button>
+                </div>
+                </div>
+
+
                 <div v-html="article.data.content" @mouseup="selectText"></div>
-                <div style="padding-top: 20px;"><el-button type="primary" plain @click="finishReading">完成阅读</el-button></div>
+                <div style="padding-top: 5px;"><el-button type="primary" plain @click="finishReading">完成阅读</el-button></div>
                 <el-backtop :bottom="30">
                     <div
                     style="
@@ -351,10 +433,10 @@ const fetchArticle = async () => {
                             <div v-else>{{ row.definition }}</div>
                         </template>
                     </el-table-column>
-                    <el-table-column label="操作">
+                    <el-table-column label="操作" >
                         <template #default="{row}">
-                            <el-button type="primary" plain icon = "Check" size='small' circle @click="() => confirmRow(row)" v-if="row.editable"></el-button>
-                            <el-button type="danger"  plain icon="Delete" size='small' circle @click="deleteTerm(row)" v-else></el-button>
+                            <el-button type="primary" plain icon = "Check" size='small'  @click="() => confirmRow(row)" v-if="row.editable"></el-button>
+                            <el-button type="danger"  plain icon="Delete" size='small'  @click="deleteTerm(row)" v-else></el-button>
         
                         </template>
                     </el-table-column>
@@ -474,4 +556,29 @@ span.content {
 .func {
     padding: 20px;
 }
+
+
+.audio-player {
+  display: flex; /* 使用Flexbox进行布局 */
+  align-items: center; /* 垂直居中对齐所有子元素 */
+  justify-content: flex-start; /* 元素向左对齐 */
+}
+
+.audio-control {
+    
+  width: 450px; /* 同时设置一个最大宽度限制 */
+  margin-right: 10px; /* 右边距，确保与按钮组有间隔 */
+  margin-top: 10px;
+  margin-bottom: 5px;
+  height:40px;
+  
+}
+
+.button-group {
+  display: flex; /* 确保按钮在同一行 */
+  align-items: center; /* 按钮垂直居中 */
+}
+
+
+
 </style>

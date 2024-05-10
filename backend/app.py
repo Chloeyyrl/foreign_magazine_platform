@@ -10,6 +10,7 @@ import secrets
 from pdfquery import PDFQuery
 import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
+from tts_test import text_to_speech
 
 
 app = Flask(__name__)
@@ -46,7 +47,7 @@ def extract_text_with_formatting(pdf_path):
 
                         # Adjust font size
                         font_size = span['size']
-                        style_attributes.append(f"font-size: {font_size+3}px;")
+                        style_attributes.append(f"font-size: {font_size+4}px;")
 
                         # Check for bold
                         if span['flags'] & (1 << 4):
@@ -119,12 +120,15 @@ def upload():
 
     # 获取纯文本，去除所有HTML标签
     art_text = soup.get_text()
+    audio_filepaths = text_to_speech(art_text)
+
+    
 
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "INSERT INTO `article` (`title`, `category`, `content`,`art_text`,`article_source`,`uploaded_by`,`update_time`) VALUES (%s, %s, %s, %s, %s,%s, %s)"
-            cursor.execute(sql, (title, category, content, art_text, source, uploaded_by, update_time))
+            sql = "INSERT INTO `article` (`title`, `category`, `content`,`art_text`,`article_source`,`uploaded_by`,`update_time`,`audio_path`) VALUES (%s, %s, %s, %s, %s,%s, %s,%s)"
+            cursor.execute(sql, (title, category, content, art_text, source, uploaded_by, update_time,audio_filepaths))
             connection.commit()
             return jsonify({"message": "文章上传成功"}), 201
     except pymysql.MySQLError as e:

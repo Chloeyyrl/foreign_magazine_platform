@@ -5,6 +5,7 @@ import re
 import pymysql
 import pymysql.cursors
 import urllib3
+from tts_test import text_to_speech
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -92,14 +93,20 @@ def fetch_article_info(target_url):
     catogory = catogory_div.text
 
     
+
+
+    
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
             check_exist_sql = "SELECT * FROM `article` WHERE `title` = %s"
             art_exist = cursor.execute(check_exist_sql, (title,))
             if not art_exist:
-                sql = "INSERT INTO `article` (`title`, `content`, `article_source`, `update_time`, `category`,`art_text`) VALUES (%s, %s, %s, %s, %s,%s)"
-                cursor.execute(sql, (title, content, source, update_time, catogory,art_text))
+                #获取音频文件地址
+                audio_filepaths = text_to_speech(art_text)
+                print('音频已生成完毕，正在处理文章：',title)
+                sql = "INSERT INTO `article` (`title`, `content`, `article_source`, `update_time`, `category`,`art_text`,`audio_path`) VALUES (%s, %s, %s, %s, %s,%s,%s)"
+                cursor.execute(sql, (title, content, source, update_time, catogory,art_text,audio_filepaths))
                 connection.commit()
                 print(f"数据插入成功；{title}")
             else:
