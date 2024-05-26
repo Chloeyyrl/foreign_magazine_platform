@@ -29,20 +29,16 @@ const highlightedContent = ref('');
 //聊天窗口
 let msgList=reactive(
         [
-            {role: "assistant", msg: "How can I help you?"}, 
+            {role: "assistant", msg: "有什么我可以帮忙的吗？"}, 
         ])
 let dialogue_history = ref('');
 const dialogue_history_list = reactive([]);
 
 // 定义音频地址列表和当前索引
 const audioState = reactive({
-  files: [
-    
-  ],
+  files: [],
   currentIndex: null
 });
-console.log("----:",audioState.files)
-
 const audioPlayer = ref(null);
 
 // 组件挂载时获取文章数据
@@ -51,8 +47,8 @@ onMounted(() => {
     document.addEventListener('mouseup', selectText);
     fetchArticle();
     show_words_and_phrases();
-
     
+    audioPlayer.value.addEventListener('ended', nextAudio);
 
    
 });
@@ -300,22 +296,21 @@ const fetchArticle = async () => {
         article.data = response.data.article;  // 更新文章内容
         highlightTerms = response.data.highlighted_terms
 
-        audioState.currentIndex = 0; // 初始化音频索引
+        console.log('高亮短语：-----',highlightTerms)
+        
+        highlightTerms.forEach(term => {   
+        const regex = new RegExp(`(${term['term']})`);
+        article.data.content = article.data.content.replace(regex, `<mark style='background-color:#d1edc4'>$1</mark>`);
+    });
+
+        audioState.currentIndex = 0; // 设置音频索引
         const audioList = article.data.audio_path.split(',')
         console.log('audioList:',audioList)
         for (let i = 0; i < audioList.length-1; i++) {
             audioState.files.push(audioList[i])
             
         }
-        console.log(audioState.files)
         
-
-        
-        
-        highlightTerms.forEach(term => {   
-        const regex = new RegExp(`(${term['term']})`);
-        article.data.content = article.data.content.replace(regex, `<mark style='background-color:#d1edc4'>$1</mark>`);
-    });
 
     } catch (error) {
         console.error('获取文章信息出错：', error);
@@ -356,13 +351,16 @@ const nextAudio = () => {
 
 watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
     if(oldIndex == null){
-        audioPlayer.value.load(); // 初始化，只需要重新加载新的音频源
+        audioPlayer.value.load(); 
     }
     else{
-        audioPlayer.value.load(); // 重新加载新的音频源
-        audioPlayer.value.play(); // 当切换音频时自动播放
+        audioPlayer.value.load(); 
+        audioPlayer.value.play(); 
+        
     }
 });
+
+
 </script>
 
 <template>
@@ -384,15 +382,14 @@ watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
                 </div>
 
                 <div class="audio-player">
-                <audio ref="audioPlayer" controls class="audio-control">
-                <source :src="audioState.files[audioState.currentIndex]" type="audio/mpeg" />
-                您的浏览器不支持 audio 元素。
-                </audio>
-                
-                <div class="button-group">
-                    <el-button type="success" plain  @click="prevAudio"><el-icon><CaretLeft /></el-icon></el-button>
-                    <el-button type="success" plain  @click="nextAudio"><el-icon><CaretRight /></el-icon></el-button>
-                </div>
+                    <audio ref="audioPlayer" controls class="audio-control">
+                        <source :src="audioState.files[audioState.currentIndex]" type="audio/mpeg" />
+                    </audio>
+                    
+                    <div class="button-group">
+                        <el-button type="success" plain  @click="prevAudio"><el-icon><CaretLeft /></el-icon></el-button>
+                        <el-button type="success" plain  @click="nextAudio"><el-icon><CaretRight /></el-icon></el-button>
+                    </div>
                 </div>
 
 

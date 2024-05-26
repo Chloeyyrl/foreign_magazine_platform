@@ -32,10 +32,7 @@ def split_text(text, max_length=2000):
             parts.append(text)
             break
         else:
-            # Try to break at a sentence ending
             pos = text.rfind('.', 0, max_length)
-            if pos == -1:
-                pos = max_length
             parts.append(text[:pos + 1])
             text = text[pos + 1:]
     return parts

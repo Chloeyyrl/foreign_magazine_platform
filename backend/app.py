@@ -274,7 +274,7 @@ def extract_words_and_phrases():
                 <{art_text}>
             '''
             extract_result = call_gpt(role_setting,prompt)
-            print(extract_result)
+            print(extract_result,type(extract_result))
     
             try:
                 term_list = json.loads(extract_result)
@@ -350,7 +350,7 @@ def get_article_user_uploaded():
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT * FROM `article` WHERE `uploaded_by`=%s" #查询用户上传的文章
+            sql = "SELECT * FROM `article` WHERE `uploaded_by`=%s ORDER BY `id` ASC" #查询用户上传的文章
             cursor.execute(sql, (user_id,))
             articles = cursor.fetchall()
             return jsonify(articles), 200
@@ -365,7 +365,7 @@ def get_article():
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT * FROM `article` WHERE `uploaded_by` = -1"
+            sql = "SELECT * FROM `article` WHERE `uploaded_by` = -1 ORDER BY `id` ASC"
             cursor.execute(sql)
             articles = cursor.fetchall()
             return jsonify(articles), 200

@@ -61,8 +61,10 @@ const getArticles = () => {
             ...article,
             isRead: false  // 初始化每篇文章的 isRead 属性
         })).reverse();
+        console.log(articles.data);
         // 检查每篇文章的阅读状态
         articles.data.forEach(article => {
+            // console.log("article",article.id);
             checkReadingStatus(article);
         });
     })
