@@ -26,7 +26,7 @@ const userid = ref(sessionStorage.getItem('userId')); // 直接初始化
 
 const resetForm = () => {
     formRef.value.resetFields();
-    file.value = null; // 重置文件
+    
 };
 
 const handleFileChange = (event) => {

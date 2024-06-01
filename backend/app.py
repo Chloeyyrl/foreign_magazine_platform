@@ -73,8 +73,8 @@ def extract_text_with_formatting(pdf_path):
 def finish_reading():
     user_id = request.json['user_id']
     article_id = request.json['article_id']
-    print('user_id:',user_id)
-    print(user_id, article_id)
+    # print('user_id:',user_id)
+    # print(user_id, article_id)
     connection = pymysql.connect(**DATABASE_CONFIG)
     # 先查询是否已经存在，再插入
     try:
@@ -121,6 +121,7 @@ def upload():
     # 获取纯文本，去除所有HTML标签
     art_text = soup.get_text()
     audio_filepaths = text_to_speech(art_text)
+    
 
     
 
@@ -129,9 +130,11 @@ def upload():
         with connection.cursor() as cursor:
             sql = "INSERT INTO `article` (`title`, `category`, `content`,`art_text`,`article_source`,`uploaded_by`,`update_time`,`audio_path`) VALUES (%s, %s, %s, %s, %s,%s, %s,%s)"
             cursor.execute(sql, (title, category, content, art_text, source, uploaded_by, update_time,audio_filepaths))
+            
             connection.commit()
             return jsonify({"message": "文章上传成功"}), 201
     except pymysql.MySQLError as e:
+        # print(f"Database error: {e}")
         return jsonify({"message": "数据库错误", "错误": str(e)}), 500
     finally:
         connection.close()
@@ -140,19 +143,15 @@ def upload():
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "No message provided"}), 400
     dialogue_history = data['dialogue_history']
-    # analyzed_sentence = data['sentence']
-    role_setting = "You are an AI with excellent language skills and can answer questions precisely."
     
-    user_question = f'''
-        User: {data['msg']}
-    '''
-    #prompt += user_question
-    prompt = user_question + dialogue_history
-    print('对话历史:',dialogue_history)
-    print('---------------------------------------------------------------------------')
+    role_setting = "You are an AI with excellent language skills and can answer questions the questions precisely. Output the result in text format."
+    
+    prompt =  dialogue_history
+    
+    print('START---------------------------------------------------------------------------')
+    print(prompt)
+    print('END---------------------------------------------------------------------------')
     answer = call_gpt(role_setting, prompt)
     return jsonify({"answer": answer}), 200
 
@@ -162,12 +161,12 @@ def alynaze_grammar():
     sentence = request.get_json()
     if not sentence:
         return jsonify({"error": "No sentence provided"}), 400
-    role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
+    role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.No symbols like ` should appear in the output.'
     
     prompt = f'''Your task is to perform the following actions:
     1 - Analyze the provided sentence to explain its grammatical structure
     2 - Provide a detailed explaination of this sentence
-    3 - Output the result in html format. The result should look like this:
+    3 - Only output the result in html format. The result should look like this:
         <html>
             <h3>Original Sentence:</h2>
             <h3>Grammar Analysis:</h2>
@@ -231,7 +230,7 @@ def show_words_and_phrases():
     connection = pymysql.connect(**DATABASE_CONFIG)
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT * FROM `vocabulary` WHERE `user_id`=%s AND `article_id`=%s"
+            sql = "SELECT * FROM `vocabulary` WHERE `user_id`=%s AND `article_id`=%s ORDER BY `id` ASC"
             cursor.execute(sql, (user_id, article_id))
             words_and_phrases = cursor.fetchall()
 
@@ -259,12 +258,19 @@ def extract_words_and_phrases():
             sql = "SELECT * FROM `article` WHERE `id`=%s "
             cursor.execute(sql, (article_id,))
             article = cursor.fetchone()
-
             art_text = article['art_text']
-            role_setting = 'You are an AI with excellent language skills and extensive reading of various foreign magazines. Your goal is to help users better understand the text.'
+
+            sql1 = "SELECT term FROM `vocabulary` WHERE `article_id`=%s AND `user_id`=%s"
+            cursor.execute(sql1, (article_id, user_id))
+            words_and_phrases_existed = cursor.fetchall()
+            #遍历每一个term，将term加入到一个列表中
+            words_and_phrases_list = [item['term'] for item in words_and_phrases_existed]
+
+
+            role_setting = 'You are an AI with excellent language skills. Your goal is to help users better understand the text.'
             prompt = f'''
                 Your task is to perform the following actions:
-                1 - Extract the difficult words, culturally loaded terms, and important phrases from the text, which is enclosed by <>, especially those words that are difficult to understand for non-native speakers.
+                1 - Extract the difficult words, culturally loaded terms, and important phrases from the text, which is enclosed by <>, especially those words that are difficult to understand for non-native speakers. 
                 2 - Provide a brief and short definition or explanation of the extracted terms or phrases according to the context, no more than 20 words.
                 3 - Format the output as a list of dictionaries, where each dictionary contains two key-value pairs: "term" and "definition". Ensure each term and its corresponding definition are enclosed in a separate dictionary. The list should look like this:
                     [
@@ -273,8 +279,9 @@ def extract_words_and_phrases():
                     ]
                 <{art_text}>
             '''
+            
             extract_result = call_gpt(role_setting,prompt)
-            print(extract_result,type(extract_result))
+            # print("extract_result--------",extract_result)
     
             try:
                 term_list = json.loads(extract_result)
@@ -285,10 +292,13 @@ def extract_words_and_phrases():
                     definition = item['definition'] 
                     # print("term----",term)
                     # print("definition---",definition)
-
-                    insert_sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
-                    cursor.execute(insert_sql, (user_id, article_id, term, definition))
-                    print(f"{term}插入成功")
+                    if term not in words_and_phrases_list:
+                        print(f"{term}新插入")
+                        insert_sql = "INSERT INTO `vocabulary` (`user_id`, `article_id`, `term`, `definition`) VALUES (%s, %s, %s, %s)"
+                        cursor.execute(insert_sql, (user_id, article_id, term, definition))
+                        # print(f"{term}插入成功")
+                    else:
+                        print(f"{term}已经存在")
 
                 return jsonify({"message":"抽取的单词和短语成功保存到数据表"}), 200
             except json.JSONDecodeError as e:

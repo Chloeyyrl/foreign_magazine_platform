@@ -12,6 +12,6 @@ def call_gpt(role_setting, prompt):
             {"role": "assistant", "content": role_setting},
             {"role": "user", "content": prompt}
         ],
-        model="gpt-3.5-turbo-0125"
+        model="gpt-4o",
     )
     return response.choices[0].message.content

@@ -61,7 +61,7 @@ def text_to_speech(text):
             all_file_paths += result + ','
             with open(filePath, 'wb') as fo:
                 fo.write(response.content)
-            print("Audio saved to", filePath)
+            # print("Audio saved to", filePath)
             
         else:
             print("Failed to retrieve audio:", response.content)

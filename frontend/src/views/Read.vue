@@ -16,15 +16,14 @@ const article = reactive({
         content: '',
     }
 });
-const isDisabled = ref();
+
 let words_and_phrases = reactive({});
 const table_data = ref([]);
 const selectedText = ref('');
 const inputMsg = ref('');
 let grammar_analysis = ref(''); //接收语法分析结果，展示在前端页面
 let highlightTerms = ref([]); //接收高亮的单词或短语
-// 定义一个响应式的计算变量来处理文章内容的高亮
-const highlightedContent = ref('');
+
 
 //聊天窗口
 let msgList=reactive(
@@ -118,23 +117,22 @@ const clearMsg = () => {
 
 
 const addMsg = async (role, msg) => {
-    inputMsg.value = '';
     const answer = ref('');
+
+    //Clear the input box
+    inputMsg.value = ''; 
+
+    //Append role and msg to the msgList and dialogue_history_list
     msgList.push({ role: role, msg: msg });
     dialogue_history_list.push({role: role, content: msg})
-    // console.log("正在观察dialogue_history_list:",dialogue_history_list)
-    //dialogue_history_list是一个数组，现在要把根据这个数组中的元素生成对话历史记录
+    
+    //Format the chat history
     dialogue_history.value = dialogue_history_list.map(entry => `${entry.role}:${entry.content}`).join('\n')
-    console.log("正在观察:",dialogue_history.value)
-
-    // dialogue_history.value  = dialogue_history_header.value + msgList.slice(1).map(item => `${item.role}: ${item.msg}`).join('\n'); //问题应该在这，每次都会把msg.List中的元素加入到dialogue_history中，其实应该只要一遍
 
     if (role == 'user' ){
         try {
         const response = await axios.post('http://localhost:5000/api/chat', {
-            msg: msg,
             dialogue_history: dialogue_history.value,
-            sentence : selectedText.value
         });
         answer.value = response.data.answer;
         addMsg(role='assistant',msg=answer.value);
@@ -142,7 +140,6 @@ const addMsg = async (role, msg) => {
         console.error('发送聊天内容到后端失败:', error);
     }
     }
-    
 }
 
 
@@ -166,13 +163,17 @@ const analyzeGrammar = async () => {
                 const analyze_grammar_prompt = ref('')
                 let dialogue_history_entry = ref({})
 
-                analyze_grammar_prompt.value = response.data.analyze_grammar_prompt
+                analyze_grammar_prompt.value = selectedText.value
                 dialogue_history_entry = {role: 'user', content: analyze_grammar_prompt.value}
-                dialogue_history_list.push(dialogue_history_entry) //第一条对话历史记录，要存入对话历史记录
+                dialogue_history_list.push(dialogue_history_entry)
+
+                // analyze_grammar_prompt.value = response.data.analyze_grammar_prompt
+                // dialogue_history_entry = {role: 'user', content: analyze_grammar_prompt.value}
+                // dialogue_history_list.push(dialogue_history_entry) //第一条对话历史记录，要存入对话历史记录
 
                 grammar_analysis.value = response.data.grammar_analysis;
-                dialogue_history_entry = {role: 'assistant', content: grammar_analysis.value}
-                dialogue_history_list.push(dialogue_history_entry) //第二条对话历史记录，要存入对话历史记录
+                // dialogue_history_entry = {role: 'assistant', content: grammar_analysis.value}
+                // dialogue_history_list.push(dialogue_history_entry) //第二条对话历史记录，要存入对话历史记录
             }
         } catch (error) {
             console.error('语法分析出错:', error);
@@ -237,11 +238,11 @@ const show_words_and_phrases = async() =>{
                 user_id: userId.value
             }
         });
-        isDisabled.value = response.data.is_disabled
-        if(isDisabled.value){
+        
+        
             words_and_phrases = response.data.words_and_phrases
             table_data.value = words_and_phrases
-        }
+        
     } catch (error) {
         console.error('展示单词和短语时出错：', error);
     }
@@ -350,7 +351,7 @@ const nextAudio = () => {
 };
 
 watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
-    if(oldIndex == null){
+    if(oldIndex == null | newIndex == oldIndex | newIndex == 0 && oldIndex != 0 ){
         audioPlayer.value.load(); 
     }
     else{
@@ -413,7 +414,7 @@ watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
             </el-col>
             <el-col :span="10" class="func">
                 <h1>
-                    <el-button type="primary" plain @click="extractWordsAndPhrases" :disabled="isDisabled">重点词汇短语</el-button>
+                    <el-button type="primary" plain @click="extractWordsAndPhrases" >重点词汇短语</el-button>
                     <el-button type="warning" plain @click="analyzeGrammar">语法分析</el-button>
                     
                 </h1>
@@ -440,7 +441,7 @@ watch(() => audioState.currentIndex, (newIndex,oldIndex) => {
                 </el-table>
                 <el-button @click="addRow" type="primary" plain style="margin-top: 10px; ">添加</el-button>
                 <el-divider />
-                <div v-html="grammar_analysis"></div>
+                <div v-html="grammar_analysis" style="margin-bottom: 10px;"></div>
                 <!-- 添加聊天窗口 -->
                 <div class="div1">
                     <div v-for="(msg,index) in msgList" :key="index">
